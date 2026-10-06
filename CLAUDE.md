@@ -19,7 +19,7 @@ The user plays this game, so knowing the words would spoil it.
 - **Browsers never get the full lists.** Only the drawer's browser gets the turn's word.
 
 ## Layout
-- `modules/web`: frontend. Vite + React 19 + TypeScript, Panda CSS, MobX, i18next (English and Ukrainian). Ark UI is added as features need it.
+- `modules/web`: frontend. Vite + React 19 + TypeScript, Panda CSS, MobX, Ark UI, i18next (English and Ukrainian).
 - `modules/core-api`: backend. Node + Express 5 + Colyseus 0.18 (live tables), one process on :2568.
 - `modules/protocol`: the shared contract. Message schemas, error codes, and later the Colyseus state classes.
 - `modules/engine`: pure game logic (guess matching, scoring, hints, stroke encoding), shared by both apps.
@@ -43,14 +43,16 @@ The user plays this game, so knowing the words would spoil it.
 ```bash
 pnpm install
 pnpm dev           # web on http://localhost:5174 + core-api on :2568 (Vite forwards /api, and /live for tables)
+pnpm demo          # web only, against the demo table (no server): for UI work, now and after M2
 pnpm lint          # add --fix to auto-fix spacing
 pnpm typecheck
 pnpm --filter @scribble-table/core-api test   # also: @scribble-table/engine
 ```
 
 ## Gotchas
-- **Ports are 5174, 2568 and 4174** (web, core-api, preview), one above Felt Table's, so both projects can run at once.
+- **Ports are 5174, 2568 and 4174** (web, core-api, preview), one above Felt Table's (5173, 2567, 4173), so both projects can run at once, each behind its own Cloudflare Tunnel when hosted. All are `strictPort`: a taken port fails loudly instead of moving.
 - **TypeScript is pinned to 6.0.** typescript-eslint doesn't support TypeScript 7 yet. Don't upgrade it.
 - **pnpm workspaces:** the packages are listed in `pnpm-workspace.yaml`. Add a dependency with `pnpm --filter @scribble-table/<module> add <pkg>`.
 - **pnpm's release-age guard:** pnpm refuses versions published in the last day. Pick the previous version instead of adding exceptions.
-- **Dev handle:** in development the root store is `window.scribbleTable`, for checking state from the console or a test script.
+- **The demo table:** the web app plays against a referee in the browser, `services/demo-table`, with sample players who chat, draw, guess and sabotage. A reload starts a new table. `pnpm demo` runs it with no server; it must keep working after M2 (live tables), for UI-only work. Its 12 sample words show in the UI, so the real word lists must never contain them.
+- **Dev handle:** in development the root store is `window.scribbleTable`, for checking state from the console or a test script, e.g. `scribbleTable.room.game.state` or `scribbleTable.room.demo.skip()`.

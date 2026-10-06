@@ -5,6 +5,7 @@
   "packageManager": "pnpm@11.21.0",
   "scripts": {
     "dev": "pnpm --parallel --recursive run dev",
+    "demo": "pnpm --filter @scribble-table/web dev --mode demo",
     "lint": "eslint .",
     "typecheck": "pnpm --recursive run typecheck"
   },

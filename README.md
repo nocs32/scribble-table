@@ -9,13 +9,13 @@ A drawing-and-guessing party game you play with friends in the browser.
 
 It's a sibling of [Felt Table](https://github.com/nocs32/felt-table-jigsaw), the multiplayer jigsaw, and shares its stack, rules and look.
 
-> **Status:** early setup. A skeleton web app and API are running; the game itself is not built yet.
+> **Status:** the web UI is playable against a demo table in the browser, with sample players who draw, guess and chat. Live tables on the server come next.
 
 ## Stack
 
 | Part | Tech |
 |---|---|
-| Web (`modules/web`) | React 19, TypeScript, Vite, Panda CSS, MobX, i18next. Coming next: Ark UI and the drawing board. |
+| Web (`modules/web`) | React 19, TypeScript, Vite, Panda CSS, MobX, Ark UI, i18next |
 | API (`modules/core-api`) | Node.js, Express 5 and Colyseus 0.18 (run with `tsx`). Coming next: the live tables. |
 | Shared | `modules/protocol` (the contract between the two) and `modules/engine` (pure game logic) |
 | Tooling | pnpm workspaces, ESLint 10 + typescript-eslint, TypeScript 6.0 |
@@ -38,7 +38,7 @@ pnpm dev
 | Web | http://localhost:5174 |
 | API | http://localhost:2568 — the web dev server forwards `/api/*` to it |
 
-Open the web URL. If everything is wired up, the page says **"Server online"**.
+Open the web URL to get a table. Until live tables exist it's a **demo table**: sample players join, chat, draw and guess, and the **Demo** buttons in the top bar skip ahead, make you the next drawer, or add and remove players.
 
 The ports sit one above Felt Table's (5173 and 2567), so both games can run at the same time.
 
@@ -47,6 +47,7 @@ The ports sit one above Felt Table's (5173 and 2567), so both games can run at t
 | Command | What it does |
 |---|---|
 | `pnpm dev` | Runs the web app and the API with hot reload |
+| `pnpm demo` | Runs the web app alone against the demo table (sample players, no server), for working on the UI |
 | `pnpm lint` | Lints every module; `pnpm lint --fix` fixes spacing automatically |
 | `pnpm typecheck` | Type-checks every module |
 | `pnpm --filter @scribble-table/core-api test` | Runs the API's tests (also: `@scribble-table/engine`) |
