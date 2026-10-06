@@ -1,0 +1,32 @@
+import '@fontsource/lato/400.css';
+import '@fontsource/lato/700.css';
+import '@fontsource/lato/900.css';
+import './index.css';
+import './stores/configure-mobx';
+import { StrictMode } from 'react';
+import { createRoot } from 'react-dom/client';
+import { App } from './app';
+import { syncDocumentLanguage } from './services/document-language';
+import { createRootStore } from './stores';
+
+const rootElement = document.getElementById('root');
+
+if (!rootElement) {
+  throw new Error('Missing #root element in index.html');
+}
+
+const store = createRootStore();
+
+// Development only: the root store as `window.scribbleTable`, for poking at it from the console.
+if (import.meta.env.DEV) {
+  Object.assign(window, { scribbleTable: store });
+}
+
+syncDocumentLanguage(store.locale);
+store.server.check();
+
+createRoot(rootElement).render(
+  <StrictMode>
+    <App store={store} />
+  </StrictMode>,
+);

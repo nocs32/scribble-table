@@ -1,0 +1,7 @@
+packages:
+  - modules/*
+allowBuilds:
+  '@parcel/watcher': true
+  esbuild: true
+  # Native msgpack encoder used by Colyseus (prebuilt binary; falls back to JS if it fails).
+  msgpackr-extract: true
