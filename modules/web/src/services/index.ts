@@ -1,3 +1,4 @@
+import { eraserSoundUrl, pencilSoundUrl, spraySoundUrl } from '../assets';
 import { createAddress } from './address';
 import { BoardSounds } from './board-sounds';
 import { createDemoTable } from './demo-table';
@@ -39,9 +40,11 @@ export const createServices = (): Services => ({
   translator: createTranslator(),
   clipboard: { writeText: (text) => navigator.clipboard.writeText(text) },
   address: createAddress(),
-  // Until core-api runs live tables (spec M2), the table is played in the browser.
+  // The demo table: a referee and sample players in the browser. `pnpm demo` (Vite's demo mode)
+  // always plays here, with no server, for working on the UI alone. Until core-api runs live
+  // tables (spec M2), `pnpm dev` does too; M2 picks by `import.meta.env.MODE === 'demo'`.
   tableClient: createDemoTable({ schedule, random: Math.random, now: Date.now, createId }),
-  sounds: new BoardSounds(window),
+  sounds: new BoardSounds(window, { pencil: pencilSoundUrl, eraser: eraserSoundUrl, spray: spraySoundUrl }),
   schedule,
   repeat,
   random: Math.random,

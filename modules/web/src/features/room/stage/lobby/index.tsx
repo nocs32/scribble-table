@@ -3,6 +3,7 @@ import type { ReactElement } from 'react';
 import { useRootStore } from '../../../../stores/use-root-store';
 import { RoomStageLobbyChoices } from './choices';
 import { RoomStageLobbyHints } from './hints';
+import { RoomStageLobbySabotage } from './sabotage';
 import { RoomStageLobbySlider } from './slider';
 import { RoomStageLobbyStart } from './start';
 import { RoomStageLobbyCard, RoomStageLobbyHead, RoomStageLobbyRoot, RoomStageLobbySubtitle, RoomStageLobbyTitle } from './styled-components';
@@ -42,6 +43,7 @@ export const RoomStageLobby = observer(function RoomStageLobby(): ReactElement {
         />
         <RoomStageLobbyChoices />
         <RoomStageLobbyHints />
+        <RoomStageLobbySabotage />
         <RoomStageLobbyWords />
         <RoomStageLobbyStart />
       </RoomStageLobbyCard>

@@ -47,5 +47,10 @@ export interface BoardFill {
   color: number;
 }
 
-// What the drawer did, passed on to everyone else.
-export type BoardOp = { type: 'stroke'; batch: StrokeBatch } | { type: 'fill'; fill: BoardFill } | { type: 'undo' } | { type: 'clear' };
+// What someone did on the board (the drawer, or a player who guessed and is sabotaging), passed
+// on to everyone else. `undo` names the drawer's action it takes away.
+export type BoardOp =
+  | { type: 'stroke'; authorId: string; batch: StrokeBatch }
+  | { type: 'fill'; authorId: string; fill: BoardFill }
+  | { type: 'undo'; id: string }
+  | { type: 'clear' };

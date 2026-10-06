@@ -8,11 +8,13 @@ export type TableSend = <T extends TableIntentType>(type: T, message: TableInten
 // Reconnecting: the connection dropped and the table holds their seat for a while.
 export type PresenceStatus = 'online' | 'reconnecting';
 
-// What the board holds: strokes (which grow while they're drawn) and paint-bucket fills.
-// Colours and sizes are positions in the protocol's `inkColors` and `brushSizes`.
+// What the board holds: strokes (which grow while they're drawn) and paint-bucket fills, each with
+// who made it (the drawer, or a saboteur). Colours and sizes are positions in the protocol's
+// `inkColors` and `brushSizes`.
 export interface StrokeAction {
   kind: 'stroke';
   id: string;
+  authorId: string;
   color: number;
   size: number;
   eraser: boolean;
@@ -23,6 +25,7 @@ export interface StrokeAction {
 export interface FillAction {
   kind: 'fill';
   id: string;
+  authorId: string;
   x: number;
   y: number;
   color: number;

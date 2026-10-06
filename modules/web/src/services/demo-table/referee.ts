@@ -8,23 +8,23 @@ import {
   type RevealSnapshot,
   type TableIntents,
   type TableIntentType,
+  type TrickKind,
   type TurnEndReason,
+  trickKinds,
 } from '@scribble-table/protocol';
 import type { TableLinkListeners } from '../types';
 import { DemoBots } from './bots';
 import { DemoFeed } from './feed';
+import { demoHandlers, type DemoHandlers, type DemoMoves } from './intents';
 import { applySettings, changedSettings, nextBot, pickChoices, settingValue, tidyName, wordPool } from './rules';
+import { DemoTricks } from './tricks';
 import { DemoTurn } from './turn';
 import type { DemoDeps, DemoMember, DemoTableState, DemoWord } from './types';
 import { secretFor, snapshotFor } from './view';
 
-type DemoHandlers = { [K in TableIntentType]: (memberId: string, message: TableIntents[K]) => void };
-
-const ignore = (): void => undefined;
-
 // Plays the server's part in the browser: lobby → choosing → drawing → reveal → … → podium,
 // with sample players. The real server (core-api) takes over with the same snapshots and intents.
-export class DemoReferee implements DemoTableState {
+export class DemoReferee implements DemoTableState, DemoMoves {
   members: DemoMember[] = [];
   settings: GameSettings = { ...defaultGameSettings };
   phase: GamePhase = 'lobby';
@@ -38,6 +38,7 @@ export class DemoReferee implements DemoTableState {
   readonly #meId: string;
   readonly #feed: DemoFeed;
   readonly #bots: DemoBots;
+  readonly #tricks: DemoTricks;
   readonly #handlers: DemoHandlers;
   #order: string[] = [];
   #drawerIndex = -1;
@@ -51,30 +52,18 @@ export class DemoReferee implements DemoTableState {
     this.#out = out;
     this.#meId = meId;
     this.#feed = new DemoFeed(deps);
+    this.#tricks = new DemoTricks(deps);
 
     this.#bots = new DemoBots(deps, {
       chat: (id, text) => this.chat(id, text),
       giveUp: (id) => this.giveUp(id),
+      trick: (id, kind) => this.playTrick(id, kind),
       choose: (id, index) => this.chooseWord(id, index),
       draw: (op) => out.board(op),
       react: (id, emoji) => out.reaction({ memberId: id, emoji }),
     });
 
-    this.#handlers = {
-      start: (id) => this.start(id),
-      updateSettings: (id, patch) => this.updateSettings(id, patch),
-      chooseWord: (id, { index }) => this.chooseWord(id, index),
-      chat: (id, { text }) => this.chat(id, text),
-      giveUp: (id) => this.giveUp(id),
-      rename: (id, { name }) => this.rename(id, name),
-      playAgain: () => this.playAgain(),
-      // Board intents and reactions matter only to other people, and here everyone else is a sample player.
-      stroke: ignore,
-      fill: ignore,
-      undo: ignore,
-      clear: ignore,
-      react: ignore,
-    };
+    this.#handlers = demoHandlers(this);
   }
 
   handle<T extends TableIntentType>(memberId: string, type: T, message: TableIntents[T]): void {
@@ -169,6 +158,21 @@ export class DemoReferee implements DemoTableState {
     this.#emit();
   }
 
+  // A player who guessed plays a trick (spec D18): on everyone still guessing, or on the drawer's pen.
+  playTrick(memberId: string, kind: TrickKind): void {
+    const member = this.#member(memberId);
+    const turn = this.#turn;
+    const allowed = this.phase === 'drawing' && this.settings.sabotage && trickKinds.includes(kind);
+
+    if (!allowed || !turn || !member || !turn.hasGuessed(memberId) || !this.#tricks.canPlay(memberId)) return;
+
+    const trick = this.#tricks.play(memberId, kind);
+
+    this.#feed.system(member, { type: 'trick', trick: kind });
+    this.#later(trick.endsAt - this.#deps.now(), () => this.#emit());
+    this.#emit();
+  }
+
   rename(memberId: string, name: string): void {
     const member = this.#member(memberId);
     const clean = tidyName(name);
@@ -253,6 +257,8 @@ export class DemoReferee implements DemoTableState {
 
     if (cheerer) this.#bots.cheer(cheerer);
 
+    if (author.isBot && this.settings.sabotage) this.#bots.sabotage(author);
+
     this.#endIfNobodyGuessing(turn);
   }
 
@@ -312,7 +318,7 @@ export class DemoReferee implements DemoTableState {
     this.#later(turn.drawMs, () => this.#endTurn('time'));
     this.members.filter((member) => member.isBot && member.id !== turn.drawerId).forEach((bot) => this.#bots.guess(bot, turn, others));
 
-    if (this.#member(turn.drawerId)?.isBot) this.#bots.draw(word);
+    if (this.#member(turn.drawerId)?.isBot) this.#bots.draw(word, turn.drawerId);
 
     this.#emit();
   }
@@ -365,6 +371,7 @@ export class DemoReferee implements DemoTableState {
   #reset(phase: GamePhase): void {
     this.#clearTimers();
     this.#bots.cancel();
+    this.#tricks.reset();
     this.phase = phase;
     this.#turn = null;
     this.reveal = null;
@@ -385,7 +392,7 @@ export class DemoReferee implements DemoTableState {
   }
 
   #emit(): void {
-    const view = { state: this, turn: this.#turn, choices: this.#choices, feed: this.#feed, now: this.#deps.now() };
+    const view = { state: this, turn: this.#turn, choices: this.#choices, feed: this.#feed, tricks: this.#tricks, now: this.#deps.now() };
 
     this.#out.snapshot(snapshotFor(view, this.#meId));
     this.#out.secret(secretFor(view, this.#meId));

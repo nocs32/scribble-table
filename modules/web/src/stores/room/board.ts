@@ -30,8 +30,13 @@ export interface SizeView {
 export interface RoomBoardDeps {
   t: Translate;
   send: TableSend;
-  // Only the drawer, while drawing.
-  canDraw: () => boolean;
+  // The drawer, while drawing: every tool.
+  isDrawer: () => boolean;
+  // A player who guessed, with sabotage on: brush and eraser on the shared board (spec D18).
+  canScribble: () => boolean;
+  meId: () => string;
+  // Tricks on the drawer's pen (shaky hand, mirror) move where a point lands.
+  bend: (x: number, y: number) => [number, number];
   // The pencil, eraser and spray, for your strokes and the drawer's.
   sounds: BoardSoundsService;
   now: () => number;
@@ -44,7 +49,8 @@ export type RoomBoardState = 'idle' | 'stroking';
 
 export type BoardCursor = 'none' | 'brush' | 'fill';
 
-const tools: readonly BoardTool[] = ['brush', 'eraser', 'fill'];
+const drawerTools: readonly BoardTool[] = ['brush', 'eraser', 'fill'];
+const scribblerTools: readonly BoardTool[] = ['brush', 'eraser'];
 const sizeDots: readonly SizeDot[] = ['xs', 'sm', 'md', 'lg'];
 const toolKeys: Readonly<Record<string, BoardTool>> = { b: 'brush', e: 'eraser', f: 'fill' };
 
@@ -96,8 +102,18 @@ export class RoomBoardStore {
     makeAutoObservable(this, { actions: observableShallow }, { autoBind: true });
   }
 
+  get isDrawer(): boolean {
+    return this.#deps.isDrawer();
+  }
+
+  // The drawer, or a saboteur.
   get canDraw(): boolean {
-    return this.#deps.canDraw();
+    return this.isDrawer || this.#deps.canScribble();
+  }
+
+  // Saboteurs have no fill: a fill tool left over from your own turn draws as a brush.
+  get activeTool(): BoardTool {
+    return this.tool === 'fill' && !this.isDrawer ? 'brush' : this.tool;
   }
 
   // What the canvas paints. It carries `version`, so the painter runs again on every new point.
@@ -108,11 +124,11 @@ export class RoomBoardStore {
   get cursor(): BoardCursor {
     if (!this.canDraw) return 'none';
 
-    return this.tool === 'fill' ? 'fill' : 'brush';
+    return this.activeTool === 'fill' ? 'fill' : 'brush';
   }
 
   get toolViews(): ToolView[] {
-    return tools.map((tool) => ({ tool, label: this.#deps.t(`board.${tool}`), isSelected: tool === this.tool }));
+    return (this.isDrawer ? drawerTools : scribblerTools).map((tool) => ({ tool, label: this.#deps.t(`board.${tool}`), isSelected: tool === this.activeTool }));
   }
 
   get colorViews(): ColorView[] {
@@ -128,8 +144,13 @@ export class RoomBoardStore {
     }));
   }
 
+  // Undo takes back the drawer's own lines only; saboteurs' lines stay.
   get canUndo(): boolean {
-    return this.canDraw && this.actions.length > 0;
+    return this.isDrawer && this.actions.some((action) => action.authorId === this.#deps.meId());
+  }
+
+  get canClear(): boolean {
+    return this.isDrawer && this.actions.length > 0;
   }
 
   selectTool(tool: BoardTool): void {
@@ -152,12 +173,14 @@ export class RoomBoardStore {
   press(x: number, y: number): void {
     if (!this.canDraw || this.state !== 'idle') return;
 
-    const [px, py] = [clamp(x, boardWidth), clamp(y, boardHeight)];
+    const [bx, by] = this.#deps.bend(x, y);
+    const [px, py] = [clamp(bx, boardWidth), clamp(by, boardHeight)];
+    const authorId = this.#deps.meId();
 
-    if (this.tool === 'fill') {
+    if (this.activeTool === 'fill') {
       const fill = { id: this.#deps.createId(), x: px, y: py, color: this.color };
 
-      this.actions.push({ kind: 'fill', ...fill });
+      this.actions.push({ kind: 'fill', authorId, ...fill });
       this.version += 1;
       this.#deps.send('fill', fill);
       this.#deps.sounds.spray();
@@ -165,7 +188,7 @@ export class RoomBoardStore {
       return;
     }
 
-    this.#live = { kind: 'stroke', id: this.#deps.createId(), color: this.color, size: this.size, eraser: this.tool === 'eraser', points: [px, py] };
+    this.#live = { kind: 'stroke', id: this.#deps.createId(), authorId, color: this.color, size: this.size, eraser: this.activeTool === 'eraser', points: [px, py] };
     this.#sent = 0;
     this.#lastPointAt = this.#deps.now();
     this.actions.push(this.#live);
@@ -179,7 +202,8 @@ export class RoomBoardStore {
 
     if (this.state !== 'stroking' || !live) return;
 
-    const [px, py] = [clamp(x, boardWidth), clamp(y, boardHeight)];
+    const [bx, by] = this.#deps.bend(x, y);
+    const [px, py] = [clamp(bx, boardWidth), clamp(by, boardHeight)];
     const [lastX, lastY] = live.points.slice(-2);
     const step = Math.hypot(px - (lastX ?? px), py - (lastY ?? py));
     const now = this.#deps.now();
@@ -216,16 +240,20 @@ export class RoomBoardStore {
     this.#deps.send('stroke', batch);
   }
 
+  // Takes back your own last line or fill.
   undo(): void {
-    if (!this.canUndo) return;
+    const meId = this.#deps.meId();
+    const index = this.actions.findLastIndex((action) => action.authorId === meId);
+
+    if (!this.canUndo || index < 0) return;
 
     this.release();
-    this.#remove(this.actions.slice(0, -1));
+    this.#remove(this.actions.filter((_, at) => at !== index));
     this.#deps.send('undo', {});
   }
 
   clear(): void {
-    if (!this.canUndo) return;
+    if (!this.canClear) return;
 
     this.release();
     this.#remove([]);
@@ -253,11 +281,11 @@ export class RoomBoardStore {
     return Boolean(tool) || (Number.isInteger(size) && size >= 1 && size <= brushSizes.length);
   }
 
-  // What the drawer does, when it's someone else.
+  // What someone else does on the board: the drawer, or a saboteur.
   receive(op: BoardOp): void {
-    if (op.type === 'stroke') this.#deps.sounds.scratch(op.batch.eraser, this.#appendRemote(op.batch), flushMs);
-    else if (op.type === 'fill') this.actions.push({ kind: 'fill', ...op.fill });
-    else this.#remove(op.type === 'undo' ? this.actions.slice(0, -1) : []);
+    if (op.type === 'stroke') this.#deps.sounds.scratch(op.batch.eraser, this.#appendRemote(op.authorId, op.batch), flushMs);
+    else if (op.type === 'fill') this.actions.push({ kind: 'fill', authorId: op.authorId, ...op.fill });
+    else this.#remove(op.type === 'undo' ? this.actions.filter((action) => action.id !== op.id) : []);
 
     if (op.type === 'fill') this.#deps.sounds.spray();
 
@@ -274,7 +302,7 @@ export class RoomBoardStore {
   }
 
   // Adds the batch to its stroke and returns how far it drew.
-  #appendRemote(batch: StrokeBatch): number {
+  #appendRemote(authorId: string, batch: StrokeBatch): number {
     const existing = this.actions.findLast((action) => action.kind === 'stroke' && action.id === batch.strokeId);
 
     if (existing?.kind === 'stroke') {
@@ -285,7 +313,7 @@ export class RoomBoardStore {
       return length;
     }
 
-    this.actions.push({ kind: 'stroke', id: batch.strokeId, color: batch.color, size: batch.size, eraser: batch.eraser, points: [...batch.points] });
+    this.actions.push({ kind: 'stroke', id: batch.strokeId, authorId, color: batch.color, size: batch.size, eraser: batch.eraser, points: [...batch.points] });
 
     return pathLength(batch.points, []);
   }

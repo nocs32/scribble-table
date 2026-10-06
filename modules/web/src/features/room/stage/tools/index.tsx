@@ -1,16 +1,18 @@
 import { observer } from 'mobx-react-lite';
 import type { ReactElement } from 'react';
-import { EraserIcon, PaintBucketIcon, PencilIcon, UndoIcon } from '../../../../assets';
+import { EraserIcon, PaintBucketIcon, PencilIcon } from '../../../../assets';
 import { useRootStore } from '../../../../stores/use-root-store';
-import { RoomStageToolsClear } from './clear';
 import { RoomStageToolsColors } from './colors';
+import { RoomStageToolsHistory } from './history';
 import { RoomStageToolsSizes } from './sizes';
 import { RoomStageToolsButton, RoomStageToolsGroup, RoomStageToolsRoot } from './styled-components';
+import { RoomStageToolsTricks } from './tricks';
 
-// The drawer's bar under the board: tool, size, colour, undo and clear.
+// The bar under the board while you draw: tool, size and colour, then undo and clear for the
+// drawer, or tricks for a saboteur.
 export const RoomStageTools = observer(function RoomStageTools(): ReactElement {
   const { locale, room } = useRootStore();
-  const { board } = room;
+  const { board, sabotage } = room;
 
   return (
     <RoomStageToolsRoot role="toolbar" aria-label={locale.t('board.tools')}>
@@ -32,12 +34,8 @@ export const RoomStageTools = observer(function RoomStageTools(): ReactElement {
       </RoomStageToolsGroup>
       <RoomStageToolsSizes />
       <RoomStageToolsColors />
-      <RoomStageToolsGroup>
-        <RoomStageToolsButton type="button" disabled={!board.canUndo} aria-label={locale.t('board.undo')} title={locale.t('board.undo')} onClick={board.undo}>
-          <UndoIcon />
-        </RoomStageToolsButton>
-        <RoomStageToolsClear />
-      </RoomStageToolsGroup>
+      {board.isDrawer && <RoomStageToolsHistory />}
+      {sabotage.canScribble && <RoomStageToolsTricks />}
     </RoomStageToolsRoot>
   );
 });

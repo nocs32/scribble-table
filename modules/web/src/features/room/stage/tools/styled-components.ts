@@ -27,6 +27,39 @@ export const RoomStageToolsButton = styled('button', {
   },
 });
 
+// A saboteur's trick: an emoji button, greyed out once the turn's trick is played.
+export const RoomStageToolsTrick = styled('button', {
+  base: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '38px',
+    height: '38px',
+    borderRadius: '8px',
+    fontFamily: 'emoji',
+    fontSize: '20px',
+    lineHeight: '1',
+    cursor: 'pointer',
+    transition: 'background-color 0.12s ease, transform 0.12s ease',
+    _hover: { bg: 'bg.hover', transform: 'translateY(-2px) scale(1.12)' },
+    _focusVisible: { outline: '2px solid', outlineColor: 'accent.ring', outlineOffset: '1px' },
+    _disabled: { opacity: '0.35', filter: 'grayscale(1)', cursor: 'not-allowed', _hover: { bg: 'transparent', transform: 'none' } },
+  },
+});
+
+export const RoomStageToolsTricksLabel = styled('span', {
+  base: {
+    display: 'none',
+    marginRight: '4px',
+    fontSize: '11px',
+    fontWeight: '900',
+    color: 'fg.muted',
+    textTransform: 'uppercase',
+    letterSpacing: '0.06em',
+    md: { display: 'inline' },
+  },
+});
+
 export const RoomStageToolsDot = styled('span', {
   base: { display: 'block', borderRadius: 'full', bg: 'currentColor' },
   variants: {

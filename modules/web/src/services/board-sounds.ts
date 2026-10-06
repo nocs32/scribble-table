@@ -1,114 +1,88 @@
 import type { BoardSoundsService } from './types';
 
-type ScratchTone = 'pencil' | 'eraser';
+type LoopName = 'pencil' | 'eraser';
 
-interface ToneShape {
-  // The band of noise it keeps (Hz), and how wide it is.
-  frequency: number;
-  q: number;
+export type BoardSoundUrls = Record<LoopName | 'spray', string>;
+
+interface LoopShape {
   // The loudest it gets, before the volume setting.
   peak: number;
-  // How much the level flickers (0–1), and how often (s): paper grain, or rubbing back and forth.
-  grain: number;
-  grainStep: number;
+  // Playback speed for a slow line and a fast one: a fast line sounds a touch higher.
+  slowRate: number;
+  fastRate: number;
 }
 
-interface Voice {
+interface Loop {
   gain: GainNode;
-  filter: BiquadFilterNode;
-  shape: ToneShape;
+  source: AudioBufferSourceNode;
+  shape: LoopShape;
 }
 
-// The tuning, all in one place. Kept quiet on purpose: it plays for every line, for everyone.
-export const scratchShapes: Record<ScratchTone, ToneShape> = {
-  pencil: { frequency: 3400, q: 0.8, peak: 0.3, grain: 0.55, grainStep: 0.012 },
-  eraser: { frequency: 900, q: 0.6, peak: 0.46, grain: 0.35, grainStep: 0.045 },
+// The tuning, all in one place. The recordings are already evened out (assets/sounds/credits.md).
+export const loopShapes: Record<LoopName, LoopShape> = {
+  pencil: { peak: 0.9, slowRate: 0.92, fastRate: 1.08 },
+  eraser: { peak: 0.5, slowRate: 0.98, fastRate: 1.03 },
 };
 
 // Board units per millisecond that count as a fast line: the faster, the louder, up to the peak.
 const fastSpeed = 1.2;
-const quietest = 0.2;
-const fadeOut = 0.035;
-const sprayPeak = 0.32;
+const quietest = 0.35;
+// Time constants (s) for fading in when the line moves and out when it stops.
+const fadeIn = 0.025;
+const fadeOut = 0.06;
+const sprayLevel = 0.6;
 
-export const makeNoise = (context: BaseAudioContext): AudioBuffer => {
-  const buffer = context.createBuffer(1, context.sampleRate * 2, context.sampleRate);
-  const data = buffer.getChannelData(0);
-
-  for (let index = 0; index < data.length; index++) data[index] = Math.random() * 2 - 1;
-
-  return buffer;
-};
-
-// Looping noise through a band-pass filter, silent until something is drawn.
-export const makeVoice = (context: BaseAudioContext, noise: AudioBuffer, destination: AudioNode, shape: ToneShape): Voice => {
+// A recording looping from a random point, silent until something is drawn.
+export const startLoop = (context: BaseAudioContext, buffer: AudioBuffer, destination: AudioNode, shape: LoopShape): Loop => {
   const source = context.createBufferSource();
-  const filter = context.createBiquadFilter();
   const gain = context.createGain();
 
-  source.buffer = noise;
+  source.buffer = buffer;
   source.loop = true;
-  filter.type = 'bandpass';
-  filter.frequency.value = shape.frequency;
-  filter.Q.value = shape.q;
   gain.gain.value = 0;
-  source.connect(filter).connect(gain).connect(destination);
-  source.start();
+  source.connect(gain).connect(destination);
+  source.start(0, Math.random() * buffer.duration);
 
-  return { gain, filter, shape };
+  return { gain, source, shape };
 };
 
-// `distance` board units drawn over `ms`, from `at`: louder (and a touch higher) the faster it
-// goes, with a flicker, then it fades unless more comes.
-export const scratch = (voice: Voice, at: number, distance: number, ms: number): void => {
-  const { gain, filter, shape } = voice;
-  const seconds = Math.max(ms, 1) / 1000;
+// `distance` board units drawn over `ms`, from `at`: the loop fades in to a level (and speed) that
+// follows how fast the line moves, then fades out unless more comes.
+export const scratch = (loop: Loop, at: number, distance: number, ms: number): void => {
+  const { gain, source, shape } = loop;
   const speed = Math.min(1, distance / Math.max(ms, 1) / fastSpeed);
-  const level = shape.peak * (quietest + (1 - quietest) * speed);
-  const steps = Math.max(1, Math.round(seconds / shape.grainStep));
 
   gain.gain.cancelScheduledValues(at);
   gain.gain.setValueAtTime(gain.gain.value, at);
-  filter.frequency.setTargetAtTime(shape.frequency * (0.85 + 0.3 * speed), at, 0.05);
-
-  for (let step = 0; step < steps; step++) {
-    gain.gain.setTargetAtTime(level * (1 - shape.grain * Math.random()), at + step * shape.grainStep, shape.grainStep / 3);
-  }
-
-  gain.gain.setTargetAtTime(0, at + seconds + 0.03, fadeOut);
+  gain.gain.setTargetAtTime(shape.peak * (quietest + (1 - quietest) * speed), at, fadeIn);
+  gain.gain.setTargetAtTime(0, at + Math.max(ms, 1) / 1000 + 0.05, fadeOut);
+  source.playbackRate.setTargetAtTime(shape.slowRate + (shape.fastRate - shape.slowRate) * speed, at, 0.08);
 };
 
-// A short "pssht": bright noise that comes in fast, sags a little and fades out.
-export const spray = (context: BaseAudioContext, noise: AudioBuffer, destination: AudioNode, at: number): void => {
+// One spray, a little higher or lower each time so repeats don't sound copied.
+export const spray = (context: BaseAudioContext, buffer: AudioBuffer, destination: AudioNode, at: number): void => {
   const source = context.createBufferSource();
-  const highpass = context.createBiquadFilter();
-  const hiss = context.createBiquadFilter();
   const gain = context.createGain();
 
-  source.buffer = noise;
-  highpass.type = 'highpass';
-  highpass.frequency.value = 2500;
-  hiss.type = 'peaking';
-  hiss.frequency.value = 7000;
-  hiss.gain.value = 6;
-  gain.gain.setValueAtTime(0, at);
-  gain.gain.linearRampToValueAtTime(sprayPeak, at + 0.03);
-  gain.gain.setTargetAtTime(sprayPeak * 0.7, at + 0.03, 0.12);
-  gain.gain.setTargetAtTime(0, at + 0.28, 0.06);
-  source.connect(highpass).connect(hiss).connect(gain).connect(destination);
-  source.start(at, Math.random() * 1.2, 0.6);
+  source.buffer = buffer;
+  source.playbackRate.value = 0.94 + Math.random() * 0.12;
+  gain.gain.value = sprayLevel;
+  source.connect(gain).connect(destination);
+  source.start(at);
 };
 
-// The drawer's pencil, eraser and fill as sound, made from filtered noise (no sound files).
-// Browsers allow audio only after a click or a key press on the page, so it starts on the first one.
+// The drawer's pencil, eraser and fill as sound, from short CC0 recordings. Browsers allow audio
+// only after a click or a key press on the page, so it starts (and loads them) on the first one.
 export class BoardSounds implements BoardSoundsService {
   #context: AudioContext | null = null;
   #master: GainNode | null = null;
-  #noise: AudioBuffer | null = null;
-  #voices: Record<ScratchTone, Voice> | null = null;
+  #loops: Record<LoopName, Loop> | null = null;
+  #spray: AudioBuffer | null = null;
   #level = 0;
+  readonly #urls: BoardSoundUrls;
 
-  constructor(target: Window) {
+  constructor(target: Window, urls: BoardSoundUrls) {
+    this.#urls = urls;
     target.addEventListener('pointerdown', this.#unlock, true);
     target.addEventListener('keydown', this.#unlock, true);
   }
@@ -128,13 +102,13 @@ export class BoardSounds implements BoardSoundsService {
   scratch(eraser: boolean, distance: number, ms: number): void {
     const context = this.#running();
 
-    if (context && this.#voices) scratch(this.#voices[eraser ? 'eraser' : 'pencil'], context.currentTime, distance, ms);
+    if (context && this.#loops) scratch(this.#loops[eraser ? 'eraser' : 'pencil'], context.currentTime, distance, ms);
   }
 
   spray(): void {
     const context = this.#running();
 
-    if (context && this.#noise && this.#master) spray(context, this.#noise, this.#master, context.currentTime);
+    if (context && this.#spray && this.#master) spray(context, this.#spray, this.#master, context.currentTime);
   }
 
   // The context, when it runs and there's something to hear.
@@ -151,13 +125,20 @@ export class BoardSounds implements BoardSoundsService {
   #start(): void {
     const context = new AudioContext();
     const master = context.createGain();
-    const noise = makeNoise(context);
 
     master.gain.value = this.#level * this.#level;
     master.connect(context.destination);
     this.#context = context;
     this.#master = master;
-    this.#noise = noise;
-    this.#voices = { pencil: makeVoice(context, noise, master, scratchShapes.pencil), eraser: makeVoice(context, noise, master, scratchShapes.eraser) };
+    // Without the recordings (offline, say) the board just stays quiet.
+    void this.#load(context, master).catch(() => undefined);
+  }
+
+  async #load(context: AudioContext, master: GainNode): Promise<void> {
+    const decode = async (url: string): Promise<AudioBuffer> => context.decodeAudioData(await (await fetch(url)).arrayBuffer());
+    const [pencil, eraser, sprayBuffer] = await Promise.all([decode(this.#urls.pencil), decode(this.#urls.eraser), decode(this.#urls.spray)]);
+
+    this.#loops = { pencil: startLoop(context, pencil, master, loopShapes.pencil), eraser: startLoop(context, eraser, master, loopShapes.eraser) };
+    this.#spray = sprayBuffer;
   }
 }

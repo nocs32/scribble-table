@@ -54,6 +54,9 @@ export const semanticTokens = defineSemanticTokens({
       edge: { value: 'rgba(0, 0, 0, 0.35)' },
       // Behind a card that sits on the board (word choice, reveal, podium).
       veil: { value: 'rgba(17, 17, 16, 0.62)' },
+      // The back of the paper, on a folded corner (the fold trick): lighter at the tip, shaded at the crease.
+      flap: { value: '#EEEAE3' },
+      flapShade: { value: '#C9C3B8' },
     },
     presence: { online: { value: '{colors.status.green}' } },
   },

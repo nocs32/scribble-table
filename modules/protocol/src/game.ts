@@ -25,6 +25,8 @@ export interface GameSettings {
   hints: boolean;
   customWords: string[];
   onlyCustomWords: boolean;
+  // Players who guessed may scribble on the board and play tricks (spec D18).
+  sabotage: boolean;
 }
 
 export type GameSettingKey = keyof GameSettings;
@@ -38,6 +40,8 @@ export const gameLimits = {
   minPlayers: 2,
   chooseSeconds: 15,
   revealSeconds: 5,
+  // Each player who guessed may play this many tricks a turn.
+  tricksPerTurn: 1,
 } as const;
 
 export const defaultGameSettings: GameSettings = {
@@ -47,7 +51,21 @@ export const defaultGameSettings: GameSettings = {
   hints: true,
   customWords: [],
   onlyCustomWords: false,
+  sabotage: true,
 };
+
+// Tricks a player who guessed can play (spec D18). Board tricks show on everyone's board; pen
+// tricks bend the drawer's pen.
+export const boardTricks = ['splat', 'flip', 'fold'] as const;
+export const penTricks = ['shake', 'mirror'] as const;
+export const trickKinds = [...boardTricks, ...penTricks] as const;
+
+export type TrickKind = (typeof trickKinds)[number];
+
+// How long each trick lasts.
+export const trickSeconds: Record<TrickKind, number> = { splat: 6, flip: 5, fold: 7, shake: 6, mirror: 6 };
+
+export const isPenTrick = (kind: TrickKind): boolean => (penTricks as readonly TrickKind[]).includes(kind);
 
 // Why a turn ended. `everyone`: all the guessers got it; `gaveUp`: nobody was left guessing,
 // because some of them gave up.

@@ -47,6 +47,8 @@ const describeSetting = (setting: GameSettingKey, value: number | boolean, t: Tr
       return t(value ? 'feed.setting.hintsOn' : 'feed.setting.hintsOff');
     case 'onlyCustomWords':
       return t(value ? 'feed.setting.onlyCustomOn' : 'feed.setting.onlyCustomOff');
+    case 'sabotage':
+      return t(value ? 'feed.setting.sabotageOn' : 'feed.setting.sabotageOff');
     case 'customWords':
       return t('feed.setting.customWords', { count: Number(value) });
     default:
@@ -66,6 +68,8 @@ const describe = (event: FeedEvent, t: Translate, language: WordLanguage): strin
       return describeSetting(event.setting, event.value, t);
     case 'close':
       return t('feed.close', { guess: event.guess });
+    case 'trick':
+      return t(`feed.trick.${event.trick}`);
     default:
       return t(`feed.${event.type}`);
   }

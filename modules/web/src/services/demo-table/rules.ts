@@ -25,10 +25,11 @@ export const applySettings = (current: GameSettings, patch: Partial<GameSettings
     hints: patch.hints ?? current.hints,
     customWords,
     onlyCustomWords: (patch.onlyCustomWords ?? current.onlyCustomWords) && customWords.length >= gameLimits.customWords.minForOnly,
+    sabotage: patch.sabotage ?? current.sabotage,
   };
 };
 
-const settingKeys: readonly GameSettingKey[] = ['rounds', 'drawSeconds', 'wordChoices', 'hints', 'customWords', 'onlyCustomWords'];
+const settingKeys: readonly GameSettingKey[] = ['rounds', 'drawSeconds', 'wordChoices', 'hints', 'customWords', 'onlyCustomWords', 'sabotage'];
 
 export const changedSettings = (before: GameSettings, after: GameSettings): GameSettingKey[] =>
   settingKeys.filter((key) => JSON.stringify(before[key]) !== JSON.stringify(after[key]));

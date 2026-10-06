@@ -13,7 +13,7 @@ export const RoomStageToolsClear = observer(function RoomStageToolsClear(): Reac
 
   return (
     <ConfirmPopover title={t('board.clearConfirm')} cancelLabel={t('board.clearNo')} confirmLabel={t('board.clearYes')} onConfirm={board.clear}>
-      <RoomStageToolsButton type="button" disabled={!board.canUndo} aria-label={t('board.clear')} title={t('board.clear')}>
+      <RoomStageToolsButton type="button" disabled={!board.canClear} aria-label={t('board.clear')} title={t('board.clear')}>
         <TrashIcon />
       </RoomStageToolsButton>
     </ConfirmPopover>

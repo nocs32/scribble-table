@@ -1,5 +1,5 @@
 import type { BoardFill, StrokeBatch } from './drawing.js';
-import type { GamePhase, GameSettingKey, GameSettings, TurnEndReason, WordChoice, WordForms } from './game.js';
+import type { GamePhase, GameSettingKey, GameSettings, TrickKind, TurnEndReason, WordChoice, WordForms } from './game.js';
 import type { PlayerColor } from './players.js';
 
 // What a table looks like to one person: shared state, plus the lines of the feed they may see.
@@ -25,6 +25,16 @@ export interface RevealSnapshot {
   reason: TurnEndReason;
 }
 
+// A trick in play. `spot` picks where it lands (which corner folds, where the paint splats), so
+// it lands in the same place on every screen.
+export interface ActiveTrick {
+  id: string;
+  kind: TrickKind;
+  fromId: string;
+  endsAt: number;
+  spot: number;
+}
+
 export interface GameSnapshot {
   phase: GamePhase;
   settings: GameSettings;
@@ -41,6 +51,9 @@ export interface GameSnapshot {
   guessedIds: string[];
   // Who gave up this turn: they score nothing, but see the word.
   gaveUpIds: string[];
+  // Tricks still in play this turn, and who has played theirs.
+  tricks: ActiveTrick[];
+  trickedIds: string[];
   reveal: RevealSnapshot | null;
 }
 
@@ -55,6 +68,7 @@ export type FeedEvent =
   | { type: 'gaveUp' }
   | { type: 'drew'; word: WordForms }
   | { type: 'setting'; setting: GameSettingKey; value: number | boolean }
+  | { type: 'trick'; trick: TrickKind }
   // Only the guesser sees it.
   | { type: 'close'; guess: string };
 
@@ -93,6 +107,7 @@ export interface TableIntents {
   chooseWord: { index: number };
   chat: { text: string };
   giveUp: Record<string, never>;
+  trick: { kind: TrickKind };
   stroke: StrokeBatch;
   fill: BoardFill;
   undo: Record<string, never>;

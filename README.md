@@ -47,6 +47,7 @@ The ports sit one above Felt Table's (5173 and 2567), so both games can run at t
 | Command | What it does |
 |---|---|
 | `pnpm dev` | Runs the web app and the API with hot reload |
+| `pnpm demo` | Runs the web app alone against the demo table (sample players, no server), for working on the UI |
 | `pnpm lint` | Lints every module; `pnpm lint --fix` fixes spacing automatically |
 | `pnpm typecheck` | Type-checks every module |
 | `pnpm --filter @scribble-table/core-api test` | Runs the API's tests (also: `@scribble-table/engine`) |

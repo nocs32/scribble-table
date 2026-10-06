@@ -22,13 +22,13 @@ const toRgba = (hex: string): Rgba => [Number.parseInt(hex.slice(1, 3), 16), Num
 const inkOf = (index: number): string => inkHex[index] ?? inkHex[0] ?? '#000000';
 
 // Keeps a canvas in step with the board's actions. Only new strokes, new points and new fills
-// are painted; when something is taken away (undo, clear, a new turn) it starts over.
+// are painted, and several strokes can grow at once (the drawer's and saboteurs'). When something
+// is taken away (undo, clear, a new turn) it starts over.
 export class BoardPainter {
   readonly #context: CanvasRenderingContext2D;
   #revision = -1;
-  // How many actions have been touched, and how far the last of them got (points, or 1 for a fill).
-  #count = 0;
-  #tail = 0;
+  // How far each action has been painted: points for a stroke, 1 for a fill.
+  readonly #painted = new Map<string, number>();
 
   constructor(context: CanvasRenderingContext2D) {
     this.#context = context;
@@ -37,15 +37,12 @@ export class BoardPainter {
   sync(actions: readonly BoardAction[], revision: number): void {
     if (revision !== this.#revision) this.#restart(revision);
 
-    const start = Math.max(0, this.#count - 1);
+    actions.forEach((action) => {
+      const done = this.#painted.get(action.id) ?? 0;
+      const now = action.kind === 'fill' ? this.#fill(action, done) : this.#stroke(action, done);
 
-    actions.slice(start).forEach((action, offset) => {
-      const progress = start + offset === this.#count - 1 ? this.#tail : 0;
-
-      this.#tail = action.kind === 'fill' ? this.#fill(action, progress) : this.#stroke(action, progress);
+      if (now !== done) this.#painted.set(action.id, now);
     });
-
-    this.#count = Math.max(this.#count, actions.length);
   }
 
   #restart(revision: number): void {
@@ -56,8 +53,7 @@ export class BoardPainter {
     context.fillRect(0, 0, boardPixelWidth, boardPixelHeight);
     context.setTransform(boardScale, 0, 0, boardScale, 0, 0);
     this.#revision = revision;
-    this.#count = 0;
-    this.#tail = 0;
+    this.#painted.clear();
   }
 
   // Paints the points from `from` on (an index into `points`) and returns how far it got.

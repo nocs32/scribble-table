@@ -34,6 +34,7 @@ export class RoomGameSettingsStore {
   hints = true;
   customWords: string[] = [];
   onlyCustomWords = false;
+  sabotage = true;
   wordsDraft = '';
   readonly limits = gameLimits;
   readonly #deps: RoomGameSettingsDeps;
@@ -87,6 +88,7 @@ export class RoomGameSettingsStore {
     this.hints = settings.hints;
     this.customWords = settings.customWords;
     this.onlyCustomWords = settings.onlyCustomWords;
+    this.sabotage = settings.sabotage;
 
     if (this.state !== 'typingWords') this.wordsDraft = settings.customWords.join(', ');
   }
@@ -114,6 +116,10 @@ export class RoomGameSettingsStore {
 
   setHints(checked: boolean): void {
     this.#deps.send('updateSettings', { hints: checked });
+  }
+
+  setSabotage(checked: boolean): void {
+    this.#deps.send('updateSettings', { sabotage: checked });
   }
 
   setOnlyCustom(checked: boolean): void {

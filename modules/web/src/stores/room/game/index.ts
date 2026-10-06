@@ -289,7 +289,7 @@ export class RoomGameStore {
 
     if (this.isDrawer) return t('game.drawThis');
 
-    if (this.hasGuessed) return t('game.youGotIt');
+    if (this.hasGuessed) return this.settings.sabotage ? t('game.youGotItSabotage') : t('game.youGotIt');
 
     return this.hasGivenUp ? t('game.youGaveUp') : t('game.guessThis');
   }

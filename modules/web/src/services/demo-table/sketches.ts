@@ -152,3 +152,12 @@ const scribble = (random: () => number): DemoSketchStep[] =>
   Array.from({ length: 4 }, () => curve(inkColors[Math.floor(random() * 4) + 5] ?? 'black', 1, ellipse(200 + random() * 400, 150 + random() * 300, 40 + random() * 80, 30 + random() * 60)));
 
 export const demoSketch = (name: DemoSketchName | null, random: () => number): DemoSketchStep[] => (name ? sketches[name]() : scribble(random));
+
+const decoyInks: readonly InkColor[] = ['black', 'red', 'orange', 'green', 'blue', 'violet'];
+
+// A sample saboteur's decoy: one wavy line somewhere on the board.
+export const demoDecoy = (random: () => number): DemoSketchStep => {
+  const [x, y] = [100 + random() * 500, 80 + random() * 440];
+
+  return curve(decoyInks[Math.floor(random() * decoyInks.length)] ?? 'black', 1, wave(x, y, x + 120 + random() * 180, y + (random() - 0.5) * 120, 15 + random() * 30, 2 + random() * 3));
+};

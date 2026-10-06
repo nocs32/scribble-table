@@ -1,5 +1,5 @@
-import type { BoardOp } from '@scribble-table/protocol';
-import { demoSketch } from './sketches';
+import { trickKinds, type BoardOp, type TrickKind } from '@scribble-table/protocol';
+import { demoDecoy, demoSketch } from './sketches';
 import type { DemoTurn } from './turn';
 import type { DemoDeps, DemoMember, DemoSketchStep, DemoWord } from './types';
 
@@ -7,6 +7,7 @@ import type { DemoDeps, DemoMember, DemoSketchStep, DemoWord } from './types';
 export interface DemoBotsHost {
   chat: (memberId: string, text: string) => void;
   giveUp: (memberId: string) => void;
+  trick: (memberId: string, kind: TrickKind) => void;
   choose: (memberId: string, index: number) => void;
   draw: (op: BoardOp) => void;
   react: (memberId: string, emoji: string) => void;
@@ -73,16 +74,25 @@ export class DemoBots {
     }
   }
 
-  draw(word: DemoWord): void {
-    demoSketch(word.sketch, this.#deps.random).reduce((startMs, step) => this.#planStep(step, startMs), 1200);
+  draw(word: DemoWord, drawerId: string): void {
+    demoSketch(word.sketch, this.#deps.random).reduce((startMs, step) => this.#planStep(step, startMs, drawerId), 1200);
+  }
+
+  // A sample player who guessed sabotages: a decoy line or two, and now and then a trick.
+  sabotage(bot: DemoMember): void {
+    const decoys = 1 + Math.floor(this.#deps.random() * 2);
+
+    for (let index = 0; index < decoys; index++) this.#planStep(demoDecoy(this.#deps.random), 1500 + this.#deps.random() * 6000, bot.id);
+
+    if (this.#deps.random() < 0.6) this.#later(2000 + this.#deps.random() * 8000, () => this.#host.trick(bot.id, this.#pick(trickKinds)));
   }
 
   // Sends one sketch step from `startMs` on and returns when the next one can start.
-  #planStep(step: DemoSketchStep, startMs: number): number {
+  #planStep(step: DemoSketchStep, startMs: number, authorId: string): number {
     if (step.kind === 'fill') {
       const fill = { id: this.#deps.createId(), x: step.x, y: step.y, color: step.color };
 
-      this.#later(startMs + 250, () => this.#host.draw({ type: 'fill', fill }));
+      this.#later(startMs + 250, () => this.#host.draw({ type: 'fill', authorId, fill }));
 
       return startMs + 600;
     }
@@ -93,7 +103,7 @@ export class DemoBots {
     for (let first = 0; first < step.points.length; first += pointsPerBatch * 2) {
       const points = step.points.slice(first, first + pointsPerBatch * 2);
 
-      this.#later(atMs, () => this.#host.draw({ type: 'stroke', batch: { strokeId, color: step.color, size: step.size, eraser: false, points } }));
+      this.#later(atMs, () => this.#host.draw({ type: 'stroke', authorId, batch: { strokeId, color: step.color, size: step.size, eraser: false, points } }));
       atMs += batchMs;
     }
 
