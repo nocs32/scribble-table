@@ -26,12 +26,13 @@ export default defineConfig({
     strictPort: true,
     proxy: { '/api': coreApiUrl, '/live': liveProxy },
   },
-  // `pnpm play` (hosting, later): the production build is served here, on this machine only, and a
-  // Cloudflare Tunnel of its own (not Felt Table's) brings a timnox.dev subdomain to it. The preview
-  // reuses `server.proxy`, so /api and /live reach core-api exactly as in dev.
+  // `pnpm play`: the production build is served here, on this machine only, and a Cloudflare Tunnel
+  // of its own (not Felt Table's) brings scribble.timnox.dev to it. The preview reuses
+  // `server.proxy`, so /api and /live reach core-api exactly as in dev.
   preview: {
     host: '127.0.0.1',
     port: 4174,
     strictPort: true,
+    allowedHosts: ['scribble.timnox.dev'],
   },
 });
