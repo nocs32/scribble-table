@@ -29,6 +29,8 @@ export interface RoomFeedDeps {
   locale: Localizer;
   language: () => WordLanguage;
   send: (text: string) => void;
+  // Takes a slot for one line; false when you're chatting faster than the table takes lines.
+  takeTurn: () => boolean;
 }
 
 const groupWindowMs = 5 * 60_000;
@@ -118,11 +120,11 @@ export class RoomFeedStore {
     this.draft = draft.slice(0, chatMaxLength);
   }
 
-  // The message shows once the table has added it to the feed.
+  // The message shows once the table has added it to the feed. Too fast, and it stays in the box.
   send(): void {
     const text = this.draft.trim();
 
-    if (!text) return;
+    if (!text || !this.#deps.takeTurn()) return;
 
     this.#deps.send(text);
     this.draft = '';

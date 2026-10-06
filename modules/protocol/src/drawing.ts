@@ -29,6 +29,9 @@ export type InkColor = (typeof inkColors)[number];
 // Brush diameters, in board units.
 export const brushSizes = [4, 10, 22, 44] as const;
 
+// Points in one stroke batch (spec §9.5). A batch goes out every 50 ms, so this is generous.
+export const strokeBatchMaxPoints = 200;
+
 export type BoardTool = 'brush' | 'eraser' | 'fill';
 
 // New points of one stroke: x, y pairs in board units. The first batch of a stroke starts it.
@@ -54,3 +57,28 @@ export type BoardOp =
   | { type: 'fill'; authorId: string; fill: BoardFill }
   | { type: 'undo'; id: string }
   | { type: 'clear' };
+
+// What the board holds: strokes (which grow while they're drawn) and paint-bucket fills, each with
+// who made it (the drawer, or a saboteur). Colours and sizes are positions in `inkColors` and
+// `brushSizes`.
+export interface StrokeAction {
+  kind: 'stroke';
+  id: string;
+  authorId: string;
+  color: number;
+  size: number;
+  eraser: boolean;
+  // x, y pairs in board units.
+  points: number[];
+}
+
+export interface FillAction {
+  kind: 'fill';
+  id: string;
+  authorId: string;
+  x: number;
+  y: number;
+  color: number;
+}
+
+export type BoardAction = StrokeAction | FillAction;

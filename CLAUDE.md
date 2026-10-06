@@ -21,7 +21,7 @@ The user plays this game, so knowing the words would spoil it.
 ## Layout
 - `modules/web`: frontend. Vite + React 19 + TypeScript, Panda CSS, MobX, Ark UI, i18next (English and Ukrainian).
 - `modules/core-api`: backend. Node + Express 5 + Colyseus 0.18 (live tables), one process on :2568.
-- `modules/protocol`: the shared contract. Message schemas, error codes, and later the Colyseus state classes.
+- `modules/protocol`: the shared contract. Intent schemas (valibot), server events, error codes.
 - `modules/engine`: pure game logic (guess matching, scoring, hints, stroke encoding), shared by both apps.
 - `eslint.config.mjs` + `eslint-rules/`: the house lint rules for every module.
 - `.scratch/`: spec and notes, ignored by git.
@@ -54,5 +54,7 @@ pnpm --filter @scribble-table/core-api test   # also: @scribble-table/engine
 - **TypeScript is pinned to 6.0.** typescript-eslint doesn't support TypeScript 7 yet. Don't upgrade it.
 - **pnpm workspaces:** the packages are listed in `pnpm-workspace.yaml`. Add a dependency with `pnpm --filter @scribble-table/<module> add <pkg>`.
 - **pnpm's release-age guard:** pnpm refuses versions published in the last day. Pick the previous version instead of adding exceptions.
-- **The demo table:** the web app plays against a referee in the browser, `services/demo-table`, with sample players who chat, draw, guess and sabotage. A reload starts a new table. `pnpm demo` runs it with no server; it must keep working after M2 (live tables), for UI-only work. Its 12 sample words show in the UI, so the real word lists must never contain them.
-- **Dev handle:** in development the root store is `window.scribbleTable`, for checking state from the console or a test script, e.g. `scribbleTable.room.game.state` or `scribbleTable.room.demo.skip()`.
+- **Live tables vs the demo table:** `pnpm dev` plays live tables on core-api (`services/live-table`). `pnpm demo` (Vite's demo mode) plays against a referee in the browser, `services/demo-table`, with sample players who chat, draw, guess and sabotage, and no server; keep it working for UI-only work. Both sit behind the same `TableClientService`, so the stores don't know which. The demo's 12 sample words show in the UI, so the real word lists must never contain them.
+- **No shared Colyseus state:** the server sends each person their own view as messages (`view`, `feed`, `secret`, `board`, `drawing`), so guessed chat and the word can't leak, and a new turn can't overtake its first strokes (spec D19). After joining or reconnecting, the browser asks for everything with `sync`.
+- **The word lists** are `modules/core-api/src/words/word-list.b64`. Never decode or print them in this session: change them through a subagent that reports counts only. Their tests report numbers, never words.
+- **Dev handle:** in development the root store is `window.scribbleTable`, for checking state from the console or a test script, e.g. `scribbleTable.room.game.state`, `scribbleTable.room.connection.refusals`, or at the demo table `scribbleTable.room.demo.skip()`.

@@ -9,14 +9,14 @@ A drawing-and-guessing party game you play with friends in the browser.
 
 It's a sibling of [Felt Table](https://github.com/nocs32/felt-table-jigsaw), the multiplayer jigsaw, and shares its stack, rules and look.
 
-> **Status:** the web UI is playable against a demo table in the browser, with sample players who draw, guess and chat. Live tables on the server come next.
+> **Status:** live tables run on the server: share the link and play. A demo table in the browser, with sample players who draw, guess and chat, is still there for working on the UI (`pnpm demo`).
 
 ## Stack
 
 | Part | Tech |
 |---|---|
 | Web (`modules/web`) | React 19, TypeScript, Vite, Panda CSS, MobX, Ark UI, i18next |
-| API (`modules/core-api`) | Node.js, Express 5 and Colyseus 0.18 (run with `tsx`). Coming next: the live tables. |
+| API (`modules/core-api`) | Node.js, Express 5 and Colyseus 0.18 (run with `tsx`): the live tables |
 | Shared | `modules/protocol` (the contract between the two) and `modules/engine` (pure game logic) |
 | Tooling | pnpm workspaces, ESLint 10 + typescript-eslint, TypeScript 6.0 |
 
@@ -36,9 +36,11 @@ pnpm dev
 | App | URL |
 |---|---|
 | Web | http://localhost:5174 |
-| API | http://localhost:2568 — the web dev server forwards `/api/*` to it |
+| API | http://localhost:2568 — the web dev server forwards `/api/*`, and `/live` for tables, to it |
 
-Open the web URL to get a table. Until live tables exist it's a **demo table**: sample players join, chat, draw and guess, and the **Demo** buttons in the top bar skip ahead, make you the next drawer, or add and remove players.
+Open the web URL to get a table, and open its link in another tab (or send it to a friend) to sit a second person down. A reload keeps your seat for 20 seconds.
+
+`pnpm demo` runs the web app alone against a **demo table** instead: sample players join, chat, draw and guess, and the **Demo** buttons in the top bar skip ahead, make you the next drawer, or add and remove players.
 
 The ports sit one above Felt Table's (5173 and 2567), so both games can run at the same time.
 
@@ -58,7 +60,7 @@ The ports sit one above Felt Table's (5173 and 2567), so both games can run at t
 modules/
 ├─ web/          React frontend
 ├─ core-api/     Express + Colyseus backend
-├─ protocol/     shared contract: messages, error codes, state
+├─ protocol/     shared contract: messages, events, error codes
 └─ engine/       pure game logic, shared by both apps
 eslint.config.mjs   house lint rules
 eslint-rules/       custom lint rules used by the config
@@ -84,6 +86,8 @@ eslint-rules/       custom lint rules used by the config
 - **Thin handlers:** they validate, call one service, and respond.
 - **Logic** lives in small state-machine classes.
 - **The server decides:** browsers send intents (a stroke, a guess) and never results.
+
+**Word lists** live in `modules/core-api/src/words/word-list.b64`, base64-encoded so they can't be read at a glance: whoever reads them can't enjoy guessing them. Only the drawer's browser ever gets a word.
 
 **TypeScript** stays on **6.0** until typescript-eslint supports TypeScript 7.
 

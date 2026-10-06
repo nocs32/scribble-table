@@ -16,6 +16,25 @@ export const RoomTopBarStart = styled('div', {
   base: { display: 'flex', alignItems: 'center', gap: '6px', minWidth: '0' },
 });
 
+// While the connection is down and the table holds your seat.
+export const RoomTopBarReconnecting = styled('span', {
+  base: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '6px',
+    height: '24px',
+    paddingInline: '8px',
+    borderRadius: 'full',
+    bg: 'accent.tint',
+    color: 'accent.text',
+    fontSize: '12px',
+    fontWeight: '700',
+    whiteSpace: 'nowrap',
+    '& svg': { width: '12px', height: '12px', animation: 'spin' },
+    _motionReduce: { '& svg': { animation: 'none' } },
+  },
+});
+
 export const RoomTopBarEnd = styled('div', {
   base: { display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '6px' },
 });

@@ -1,3 +1,4 @@
+import { customWordForms } from '@scribble-table/engine';
 import type { DemoWord } from './types';
 
 // The demo's own sample words. They are shown while the UI is reviewed, so the real word lists
@@ -19,4 +20,4 @@ export const demoWords: readonly DemoWord[] = [
 ];
 
 // A custom word exists only as typed, so it is the same in both languages.
-export const customWord = (word: string): DemoWord => ({ forms: { en: word, uk: word }, alternatives: [], difficulty: 'medium', sketch: null });
+export const customWord = (word: string): DemoWord => ({ forms: customWordForms(word), alternatives: [], difficulty: 'medium', sketch: null });

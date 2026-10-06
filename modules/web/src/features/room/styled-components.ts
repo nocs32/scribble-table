@@ -28,7 +28,7 @@ export const RoomBody = styled('main', {
   },
 });
 
-// Instead of the table, while it opens.
+// Instead of the table, while it opens or when there's none to show.
 export const RoomStatusRoot = styled('main', {
   base: { display: 'grid', placeItems: 'center', minHeight: '100dvh', padding: '24px', bg: 'chrome.app', color: 'fg.default' },
 });
@@ -57,6 +57,10 @@ export const RoomStatusLogo = styled('span', {
 
 export const RoomStatusTitle = styled('h1', {
   base: { fontSize: '20px', fontWeight: '900', letterSpacing: '-0.01em' },
+});
+
+export const RoomStatusText = styled('p', {
+  base: { marginBottom: '8px', fontSize: '15px', color: 'fg.muted', textWrap: 'balance' },
 });
 
 export const RoomStatusSpinner = styled('span', {

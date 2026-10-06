@@ -7,5 +7,8 @@
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "valibot": "^1.5.0"
   }
 }

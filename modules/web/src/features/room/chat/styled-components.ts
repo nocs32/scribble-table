@@ -38,6 +38,19 @@ export const RoomChatTitle = styled('h2', {
   },
 });
 
+// Empty (and taking no room) unless you're typing too fast; it's always there, so screen readers
+// hear it change.
+export const RoomChatComposerNote = styled('p', {
+  base: {
+    flexShrink: '0',
+    marginInline: '12px',
+    fontSize: '12px',
+    fontWeight: '700',
+    color: 'accent.text',
+    '&:not(:empty)': { marginBottom: '6px', animation: 'fadeIn 0.2s ease-out' },
+  },
+});
+
 export const RoomChatComposerRoot = styled('form', {
   base: {
     display: 'flex',

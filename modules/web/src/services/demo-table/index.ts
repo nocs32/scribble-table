@@ -1,6 +1,7 @@
 import type { TableClientService, TableLink } from '../types';
 import { DemoReferee } from './referee';
-import { freeColor, tidyName } from './rules';
+import { cleanPersonName } from '@scribble-table/protocol';
+import { freeColor } from './rules';
 import type { DemoDeps, DemoMember } from './types';
 
 const roomIdAlphabet = '0123456789abcdefghijklmnopqrstuvwxyz';
@@ -33,7 +34,7 @@ export const createDemoTable = (deps: DemoDeps): TableClientService => ({
 
     // After `open` resolves, so the store already knows who it is.
     deps.schedule(() => {
-      const me: DemoMember = { id: meId, name: tidyName(name ?? '') || defaultName, color: freeColor([]), score: 0, connected: true, isBot: false, language: 'en' };
+      const me: DemoMember = { id: meId, name: cleanPersonName(name ?? '') || defaultName, color: freeColor([]), score: 0, connected: true, isBot: false, language: 'en' };
 
       referee.join(me);
       [0, 1].forEach(() => referee.addBot());
@@ -41,6 +42,6 @@ export const createDemoTable = (deps: DemoDeps): TableClientService => ({
 
     deps.schedule(() => referee.addBot(), 4000);
 
-    return Promise.resolve(link);
+    return Promise.resolve({ ok: true, link });
   },
 });

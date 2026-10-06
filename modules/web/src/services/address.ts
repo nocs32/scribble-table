@@ -10,4 +10,6 @@ export const createAddress = (): AddressService => ({
 
     if (window.location.pathname !== path) window.history.replaceState(null, '', path);
   },
+  startNew: () => window.location.assign('/'),
+  reload: () => window.location.reload(),
 });

@@ -2,22 +2,32 @@ import { observer } from 'mobx-react-lite';
 import type { ReactElement } from 'react';
 import { LogoMark, SpinnerIcon } from '../../assets';
 import { useRootStore } from '../../stores/use-root-store';
-import { RoomStatusCard, RoomStatusLogo, RoomStatusRoot, RoomStatusSpinner, RoomStatusTitle } from './styled-components';
+import { Button } from '../../ui';
+import { RoomStatusCard, RoomStatusLogo, RoomStatusRoot, RoomStatusSpinner, RoomStatusText, RoomStatusTitle } from './styled-components';
 
-// While the table opens.
+// Shown instead of the table while joining it, or when there's no table to show.
 export const RoomStatus = observer(function RoomStatus(): ReactElement {
-  const { locale } = useRootStore();
+  const { connection } = useRootStore().room;
 
   return (
     <RoomStatusRoot>
-      <RoomStatusCard role="status">
+      <RoomStatusCard aria-live="polite" aria-busy={connection.isBusy}>
         <RoomStatusLogo>
           <LogoMark />
         </RoomStatusLogo>
-        <RoomStatusTitle>{locale.t('status.connecting')}</RoomStatusTitle>
-        <RoomStatusSpinner>
-          <SpinnerIcon />
-        </RoomStatusSpinner>
+        <RoomStatusTitle>{connection.title}</RoomStatusTitle>
+        {connection.isBusy ? (
+          <RoomStatusSpinner>
+            <SpinnerIcon />
+          </RoomStatusSpinner>
+        ) : (
+          <>
+            <RoomStatusText>{connection.text}</RoomStatusText>
+            <Button type="button" tone="primary" onClick={connection.act}>
+              {connection.actionLabel}
+            </Button>
+          </>
+        )}
       </RoomStatusCard>
     </RoomStatusRoot>
   );
