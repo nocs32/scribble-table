@@ -46,7 +46,8 @@ pnpm dev           # web on http://localhost:5174 + core-api on :2568 (Vite forw
 pnpm demo          # web only, against the demo table (no server): for UI work, now and after M2
 pnpm lint          # add --fix to auto-fix spacing
 pnpm typecheck
-pnpm --filter @scribble-table/core-api test   # also: @scribble-table/engine
+pnpm test          # engine + core-api; one module: pnpm --filter @scribble-table/core-api test
+pnpm build         # production web build (CI runs lint, typecheck, test, build on every PR and push to main)
 ```
 
 ## Gotchas

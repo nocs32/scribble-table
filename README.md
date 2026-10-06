@@ -24,7 +24,7 @@ The server runs the game. It picks the words, keeps the clock, checks guesses an
 
 ## Getting started
 
-**Requirements:** Node.js 24+ and pnpm 11+.
+**Requirements:** Node.js 24 (see `.nvmrc`) and pnpm 11+.
 
 ```bash
 pnpm install
@@ -52,7 +52,10 @@ The ports sit one above Felt Table's (5173 and 2567), so both games can run at t
 | `pnpm demo` | Runs the web app alone against the demo table (sample players, no server), for working on the UI |
 | `pnpm lint` | Lints every module; `pnpm lint --fix` fixes spacing automatically |
 | `pnpm typecheck` | Type-checks every module |
-| `pnpm --filter @scribble-table/core-api test` | Runs the API's tests (also: `@scribble-table/engine`) |
+| `pnpm test` | Runs the engine and core-api tests; one module: `pnpm --filter @scribble-table/core-api test` |
+| `pnpm build` | Builds the web app for production |
+
+**CI:** GitHub Actions (`.github/workflows/ci.yml`) runs lint, typecheck, test and build on every pull request and every push to `main`.
 
 ## Project layout
 
