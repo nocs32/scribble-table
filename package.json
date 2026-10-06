@@ -7,7 +7,9 @@
     "dev": "pnpm --parallel --recursive run dev",
     "demo": "pnpm --filter @scribble-table/web dev --mode demo",
     "lint": "eslint .",
-    "typecheck": "pnpm --recursive run typecheck"
+    "typecheck": "pnpm --recursive run typecheck",
+    "test": "pnpm --recursive run test",
+    "build": "pnpm --recursive run build"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
