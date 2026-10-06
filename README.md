@@ -9,7 +9,7 @@ A drawing-and-guessing party game you play with friends in the browser.
 
 It's a sibling of [Felt Table](https://github.com/nocs32/felt-table-jigsaw), the multiplayer jigsaw, and shares its stack, rules and look.
 
-> **Status:** live tables run on the server: share the link and play. A demo table in the browser, with sample players who draw, guess and chat, is still there for working on the UI (`pnpm demo`).
+> **Status:** live tables run on the server, hosted at https://scribble.timnox.dev while `pnpm play` runs: share the link and play. A demo table in the browser, with sample players who draw, guess and chat, is still there for working on the UI (`pnpm demo`).
 
 ## Stack
 
@@ -54,8 +54,33 @@ The ports sit one above Felt Table's (5173 and 2567), so both games can run at t
 | `pnpm typecheck` | Type-checks every module |
 | `pnpm test` | Runs the engine and core-api tests; one module: `pnpm --filter @scribble-table/core-api test` |
 | `pnpm build` | Builds the web app for production |
+| `pnpm play` | Builds, then serves the game at https://scribble.timnox.dev from this computer (see below) |
 
 **CI:** GitHub Actions (`.github/workflows/ci.yml`) runs lint, typecheck, test and build on every pull request and every push to `main`.
+
+## Play with friends
+
+There's no cloud server: `pnpm play` runs Scribble Table on your own computer, and a free [Cloudflare Tunnel](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/) puts it on **https://scribble.timnox.dev**. No router ports are opened, and your home address stays hidden behind Cloudflare.
+
+```bash
+pnpm play
+```
+
+- It builds the web app, then starts core-api, the production web server (`vite preview` on `127.0.0.1:4174`) and the tunnel. Ctrl+C stops all three.
+- Stop `pnpm dev` first: both use core-api's port 2568.
+- It runs alongside Felt Table's `pnpm play`: each game has its own ports and its own tunnel.
+- Keep the computer awake while you play. Closing the terminal or restarting wipes the tables, like any server restart.
+- To ship a change, stop `pnpm play` and start it again. It rebuilds from what's checked out.
+
+**One-time setup** on the computer that hosts: install `cloudflared` (`winget install Cloudflare.cloudflared`), open a new terminal so it's on PATH, then:
+
+```bash
+cloudflared tunnel login
+cloudflared tunnel create scribble-table
+cloudflared tunnel route dns scribble-table scribble.timnox.dev
+```
+
+`cloudflared tunnel login` is needed only once per computer; Felt Table's setup already did it here. The tunnel's credentials live in `~/.cloudflared/`, outside the repo. Keep them private.
 
 ## Project layout
 

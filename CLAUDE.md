@@ -48,6 +48,7 @@ pnpm lint          # add --fix to auto-fix spacing
 pnpm typecheck
 pnpm test          # engine + core-api; one module: pnpm --filter @scribble-table/core-api test
 pnpm build         # production web build (CI runs lint, typecheck, test, build on every PR and push to main)
+pnpm play          # build + serve at https://scribble.timnox.dev from this PC through a Cloudflare Tunnel
 ```
 
 ## Gotchas
@@ -55,6 +56,7 @@ pnpm build         # production web build (CI runs lint, typecheck, test, build 
 - **TypeScript is pinned to 6.0.** typescript-eslint doesn't support TypeScript 7 yet. Don't upgrade it.
 - **pnpm workspaces:** the packages are listed in `pnpm-workspace.yaml`. Add a dependency with `pnpm --filter @scribble-table/<module> add <pkg>`.
 - **pnpm's release-age guard:** pnpm refuses versions published in the last day. Pick the previous version instead of adding exceptions.
+- **Hosting is `pnpm play`, not a cloud host** (free, no payment card), as in Felt Table. It runs `vite preview` on `127.0.0.1:4174`, which reuses the dev `/api` + `/live` proxy and only accepts the scribble.timnox.dev host, plus core-api and the `scribble-table` Cloudflare Tunnel (credentials in `~/.cloudflared/`). Stop `pnpm dev` first, since both need port 2568. The user starts `pnpm play` themselves: don't start it for them.
 - **Live tables vs the demo table:** `pnpm dev` plays live tables on core-api (`services/live-table`). `pnpm demo` (Vite's demo mode) plays against a referee in the browser, `services/demo-table`, with sample players who chat, draw, guess and sabotage, and no server; keep it working for UI-only work. Both sit behind the same `TableClientService`, so the stores don't know which. The demo's 12 sample words show in the UI, so the real word lists must never contain them.
 - **No shared Colyseus state:** the server sends each person their own view as messages (`view`, `feed`, `secret`, `board`, `drawing`), so guessed chat and the word can't leak, and a new turn can't overtake its first strokes (spec D19). After joining or reconnecting, the browser asks for everything with `sync`.
 - **The word lists** are `modules/core-api/src/words/word-list.b64`. Never decode or print them in this session: change them through a subagent that reports counts only. Their tests report numbers, never words.
