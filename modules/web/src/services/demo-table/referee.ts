@@ -1,6 +1,7 @@
-import { drawerPoints } from '@scribble-table/engine';
+import { applySettings, changedSettings, drawerPoints, pickWordChoices, settingValue } from '@scribble-table/engine';
 import {
   chatMaxLength,
+  cleanPersonName,
   defaultGameSettings,
   gameLimits,
   type GamePhase,
@@ -16,7 +17,7 @@ import type { TableLinkListeners } from '../types';
 import { DemoBots } from './bots';
 import { DemoFeed } from './feed';
 import { demoHandlers, type DemoHandlers, type DemoMoves } from './intents';
-import { applySettings, changedSettings, nextBot, pickChoices, settingValue, tidyName, wordPool } from './rules';
+import { nextBot, wordPool } from './rules';
 import { DemoTricks } from './tricks';
 import { DemoTurn } from './turn';
 import type { DemoDeps, DemoMember, DemoTableState, DemoWord } from './types';
@@ -175,7 +176,7 @@ export class DemoReferee implements DemoTableState, DemoMoves {
 
   rename(memberId: string, name: string): void {
     const member = this.#member(memberId);
-    const clean = tidyName(name);
+    const clean = cleanPersonName(name);
 
     if (!member || !clean || clean === member.name) return;
 
@@ -295,7 +296,7 @@ export class DemoReferee implements DemoTableState, DemoMoves {
     this.#reset('choosing');
     this.turnId = this.#deps.createId();
     this.drawerId = drawer.id;
-    this.#choices = pickChoices(wordPool(this.settings), this.#used, this.settings.wordChoices, this.#deps.random);
+    this.#choices = pickWordChoices(wordPool(this.settings), this.#used, this.settings.wordChoices, this.#deps.random);
     this.endsAt = this.#deps.now() + chooseMs;
     this.#later(chooseMs, () => this.chooseWord(drawer.id, Math.floor(this.#deps.random() * this.#choices.length)));
     this.#feed.system(drawer, { type: 'drawing' });

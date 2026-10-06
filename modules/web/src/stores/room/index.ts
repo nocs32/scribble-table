@@ -1,9 +1,11 @@
-import { personNameMaxLength, type BoardOp, type TableReactionEvent, type TableSecret, type TableSnapshot, type WordLanguage } from '@scribble-table/protocol';
-import { makeAutoObservable, observableRef } from 'mobx';
-import type { DemoControls, Services, TableLink } from '../../services';
+import { personNameMaxLength, type BoardAction, type BoardOp, type TableErrorEvent, type TableReactionEvent, type TableSecret, type TableSnapshot, type WordLanguage } from '@scribble-table/protocol';
+import { makeAutoObservable } from 'mobx';
+import type { DemoControls, Services } from '../../services';
 import type { LocaleStore, Translate } from '../locale';
 import { NameFieldStore } from '../name-field';
 import { RoomBoardStore } from './board';
+import { RoomChatPaceStore } from './chat-pace';
+import { RoomConnectionStore } from './connection';
 import { RoomFeedStore } from './feed';
 import { RoomGameStore } from './game';
 import { RoomPresenceStore } from './presence';
@@ -12,9 +14,21 @@ import { RoomSabotageStore } from './sabotage';
 import { RoomShareStore } from './share';
 import type { TableSend } from './types';
 
-// connecting → open. The table client sends snapshots, secrets, board ops and reactions;
-// this store hands them to its parts and sends their intents back.
-export type RoomState = 'connecting' | 'open';
+// The table sends; the room hands it to its parts. Wrapped, because the room's actions are bound
+// only once its constructor has run makeAutoObservable.
+const createConnection = (room: RoomStore, services: Services, t: Translate): RoomConnectionStore =>
+  new RoomConnectionStore({
+    ...services,
+    t,
+    receivers: {
+      snapshot: (snapshot) => room.receiveSnapshot(snapshot),
+      secret: (secret) => room.receiveSecret(secret),
+      board: (op) => room.receiveBoard(op),
+      reaction: (event) => room.receiveReaction(event),
+      drawing: (turnId, actions) => room.receiveDrawing(turnId, actions),
+      refused: (event) => room.receiveRefusal(event),
+    },
+  });
 
 // Sabotage reads the game and the people at the table as they change.
 const createSabotage = (room: RoomStore, services: Services, t: Translate, send: TableSend): RoomSabotageStore =>
@@ -45,14 +59,16 @@ const createBoard = (room: RoomStore, services: Services, t: Translate, send: Ta
     schedule: services.schedule,
   });
 
+// The table: its connection hands snapshots, secrets, board ops and reactions to the parts, and
+// the parts send their intents back through it.
 export class RoomStore {
-  state: RoomState = 'connecting';
-  link: TableLink | null = null;
+  readonly connection: RoomConnectionStore;
   readonly presence: RoomPresenceStore;
   readonly game: RoomGameStore;
   readonly board: RoomBoardStore;
   readonly sabotage: RoomSabotageStore;
   readonly feed: RoomFeedStore;
+  readonly chatPace: RoomChatPaceStore;
   readonly reactions: RoomReactionsStore;
   readonly share: RoomShareStore;
   readonly myNameField: NameFieldStore;
@@ -61,11 +77,13 @@ export class RoomStore {
 
   constructor(services: Services, locale: LocaleStore) {
     const { t } = locale;
-    const send: TableSend = (type, message) => this.link?.send(type, message);
+    const send: TableSend = (type, message) => this.connection.link?.send(type, message);
     const language = (): WordLanguage => locale.language;
 
     this.#services = services;
     this.#locale = locale;
+
+    this.connection = createConnection(this, services, t);
 
     this.presence = new RoomPresenceStore({
       t,
@@ -78,9 +96,10 @@ export class RoomStore {
     this.game = new RoomGameStore({ t, language, presence: this.presence, send, now: services.now, repeat: services.repeat });
     this.sabotage = createSabotage(this, services, t, send);
     this.board = createBoard(this, services, t, send);
-    this.feed = new RoomFeedStore({ presence: this.presence, locale, language, send: (text) => send('chat', { text }) });
+    this.chatPace = new RoomChatPaceStore({ t, now: services.now, schedule: services.schedule });
+    this.feed = new RoomFeedStore({ presence: this.presence, locale, language, send: (text) => send('chat', { text }), takeTurn: () => this.chatPace.take() });
     this.reactions = new RoomReactionsStore({ ...services, t, send: (emoji) => send('react', { emoji }) });
-    this.share = new RoomShareStore({ ...services, roomId: () => this.link?.roomId ?? null, t });
+    this.share = new RoomShareStore({ ...services, roomId: () => this.connection.roomId, t });
 
     this.myNameField = new NameFieldStore({
       read: () => this.presence.me?.name ?? '',
@@ -90,16 +109,16 @@ export class RoomStore {
       finish: (text) => text.trim().replace(/\s+/gu, ' '),
     });
 
-    makeAutoObservable(this, { link: observableRef }, { autoBind: true });
+    makeAutoObservable(this, {}, { autoBind: true });
   }
 
   get isOpen(): boolean {
-    return this.state === 'open';
+    return this.connection.isOpen;
   }
 
   // Only the demo table has these.
   get demo(): DemoControls | null {
-    return this.link?.demo ?? null;
+    return this.connection.link?.demo ?? null;
   }
 
   get composerPlaceholder(): string {
@@ -111,20 +130,11 @@ export class RoomStore {
   }
 
   open(): void {
-    const { tableClient, address, preferences } = this.#services;
-    const listeners = { snapshot: this.receiveSnapshot, secret: this.receiveSecret, board: this.receiveBoard, reaction: this.receiveReaction };
-
-    void tableClient.open(address.roomId(), preferences.loadName(), listeners).then(this.opened);
-  }
-
-  opened(link: TableLink): void {
-    this.link = link;
-    this.state = 'open';
-    this.#services.address.showRoom(link.roomId);
+    this.connection.open();
   }
 
   receiveSnapshot(snapshot: TableSnapshot): void {
-    this.presence.receive(snapshot.members, this.link?.meId ?? '');
+    this.presence.receive(snapshot.members, this.connection.meId);
     this.game.receive(snapshot.game);
     this.sabotage.receive(snapshot.game);
     this.board.syncTurn(snapshot.game.turnId);
@@ -141,6 +151,16 @@ export class RoomStore {
     if (op.type === 'stroke' && op.authorId !== this.game.drawerId) this.sabotage.markScribbling(op.authorId);
   }
 
+  // Joining or reconnecting mid-turn: the whole drawing so far, at once.
+  receiveDrawing(turnId: string, actions: BoardAction[]): void {
+    this.board.restore(turnId, actions);
+  }
+
+  // A chat line the table turned down for coming too fast gets a note, instead of vanishing.
+  receiveRefusal(event: TableErrorEvent): void {
+    if (event.type === 'chat' && event.code === 'RATE_LIMITED') this.chatPace.refuse();
+  }
+
   receiveReaction(event: TableReactionEvent): void {
     this.reactions.receive(event.emoji, event.memberId, this.presence.find(event.memberId)?.name ?? '');
   }
@@ -152,6 +172,6 @@ export class RoomStore {
 
     this.presence.rename(me.id, name);
     this.#services.preferences.saveName(name);
-    this.link?.send('rename', { name });
+    this.connection.link?.send('rename', { name });
   }
 }

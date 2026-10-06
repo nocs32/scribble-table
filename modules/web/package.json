@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@ark-ui/react": "^5.39.2",
+    "@colyseus/sdk": "^0.18.5",
     "@fontsource/lato": "^5.3.0",
     "@scribble-table/engine": "workspace:*",
     "@scribble-table/protocol": "workspace:*",

@@ -9,8 +9,8 @@ Node + Express 5 for HTTP, and Colyseus 0.18 for the live multiplayer rooms. The
 
 **Colyseus specifics:**
 - One process serves both: `new Server({ transport: new WebSocketTransport(), express: (app) => … })` in `src/index.ts`. Colyseus answers `/matchmake/*` and the WebSocket upgrades; everything else falls through to Express. No Redis (one process, spec D4).
-- Room classes extend Colyseus `Room<{ state; client }>`. Class fields like `maxClients`, `autoDispose` and `state` are fine (Colyseus re-installs its accessors in `__init`).
-- Shared state is the Schema classes in `@scribble-table/protocol/state`, written as `class X extends schema({ … }, 'X') {}`. No decorators, so no `experimentalDecorators`.
+- Room classes extend Colyseus `Room<{ client }>`. Class fields like `maxClients` and `autoDispose` are fine (Colyseus re-installs its accessors in `__init`).
+- **No Schema state** (spec D19). The room sends each person their own view as messages, through `TableRoomOutbox`: `view` (shared, sent when it changed), `feed` and `secret` (per person), plus `board`, `drawing`, `reaction` and `error` events. Messages arrive in order, which state patches don't promise. A browser gets nothing personal until it sends `sync`.
 - Message handlers follow rule 3 through the room's `#on(type, handle)`: valibot schema from the protocol, then the rate limit, then one call. Don't pass a schema to Colyseus's own `onMessage`/`validate`: a failed check there disconnects the sender. Refusals go back as an `error` event (`{ code }`).
 - Join options are checked in `onJoin`; a refused join throws `ServerError` with the typed code as its message.
 - Tests: unit tests per part (`*.test.ts` next to it) and a room test through a real server with `@colyseus/testing` (`table-room/index.test.ts`). Run `pnpm --filter @scribble-table/core-api test`.
@@ -64,8 +64,8 @@ No game rules, storage or calculations inside handlers.
 - **Logs:** log through `src/logger.ts` with context such as `roomId` and `sessionId`. No `console.log` anywhere else.
 
 ## 8. One shared contract
-- Message types, schemas, error codes and name rules live in `@scribble-table/protocol`; the state classes in `@scribble-table/protocol/state`. Both apps import them. Never redefine them in core-api.
-- Changing the state or a message's shape bumps `tableProtocolVersion`.
+- Intent schemas, server events, error codes and name rules live in `@scribble-table/protocol`. Both apps import them. Never redefine them in core-api.
+- Changing an intent's or an event's shape bumps `tableProtocolVersion`.
 
 ## Folder example
 ```
@@ -80,13 +80,14 @@ src/
 └─ table-room/
    ├─ index.ts              TableRoom: wires the parts to Colyseus
    ├─ members.ts            TableRoomMembers
-   ├─ feed.ts               TableRoomFeed
-   ├─ settings.ts           TableRoomSettings (rounds, draw time, custom words)
-   ├─ game.ts               TableRoomGame (lobby → choosing → drawing → reveal → podium)
+   ├─ feed.ts               TableRoomFeed (who may see each line)
+   ├─ game.ts               TableRoomGame (lobby → choosing → drawing → reveal → podium, settings)
+   ├─ turn.ts               TableRoomTurn (one turn: the word, hints, guesses, give-ups)
    ├─ turns.ts              TableRoomTurns (drawing order, joins and leaves mid-game)
-   ├─ drawing.ts            TableRoomDrawing (the turn's strokes, undo, clear, limits)
-   ├─ guesses.ts            TableRoomGuesses (matching, close hints, the spoiler check)
+   ├─ tricks.ts             TableRoomTricks (sabotage: one trick a turn)
+   ├─ drawing.ts            TableRoomDrawing (the turn's strokes and fills, undo, clear, limits)
+   ├─ outbox.ts             TableRoomOutbox (what each person is sent)
    ├─ rate-limits.ts        TableRoomRateLimits
    ├─ lifecycle.ts          TableRoomLifecycle
-   └─ *.test.ts
+   └─ *.test.ts             (test-table.ts: made-up words and a hand-cranked clock)
 ```

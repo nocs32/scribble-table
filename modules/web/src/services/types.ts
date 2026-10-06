@@ -1,4 +1,4 @@
-import type { BoardOp, TableIntents, TableIntentType, TableReactionEvent, TableSecret, TableSnapshot } from '@scribble-table/protocol';
+import type { BoardAction, BoardOp, TableErrorEvent, TableIntents, TableIntentType, TableReactionEvent, TableSecret, TableSnapshot } from '@scribble-table/protocol';
 import type { Language, TranslationKey, TranslationValues } from '../i18n';
 
 export interface SoundPreference {
@@ -42,6 +42,9 @@ export type Schedule = (callback: () => void, delayMs: number) => () => void;
 export interface AddressService {
   roomId: () => string | null;
   showRoom: (roomId: string) => void;
+  // Goes to `/`, which sets up a new table.
+  startNew: () => void;
+  reload: () => void;
 }
 
 export interface TableLinkListeners {
@@ -51,7 +54,23 @@ export interface TableLinkListeners {
   board: (op: BoardOp) => void;
   // Someone else's reaction.
   reaction: (event: TableReactionEvent) => void;
+  // The whole drawing of the turn so far, for a browser that joined or reconnected mid-turn.
+  drawing: (turnId: string, actions: BoardAction[]) => void;
+  // The connection dropped (the table holds the seat for a while), or came back.
+  connection: (state: TableConnectionState) => void;
+  // The seat is gone for good: the table closed, or getting back in took too long.
+  closed: () => void;
+  // The table refused something this browser asked for.
+  refused: (event: TableErrorEvent) => void;
 }
+
+export type TableConnectionState = 'live' | 'reconnecting';
+
+// Why a table couldn't be opened: it was cleared, it's full, this web app is out of date, or the
+// server can't be reached.
+export type TableOpenFailure = 'gone' | 'full' | 'outdated' | 'unreachable';
+
+export type TableOpenResult = { ok: true; link: TableLink } | { ok: false; failure: TableOpenFailure };
 
 // Buttons for trying the game alone: only the demo table has them.
 export interface DemoControls {
@@ -72,7 +91,7 @@ export interface TableLink {
 
 export interface TableClientService {
   // Joins the table at `roomId`, or sets up a new one when it's null.
-  open: (roomId: string | null, name: string | null, listeners: TableLinkListeners) => Promise<TableLink>;
+  open: (roomId: string | null, name: string | null, listeners: TableLinkListeners) => Promise<TableOpenResult>;
 }
 
 // Everything stores need from the outside world, created once in index.tsx.

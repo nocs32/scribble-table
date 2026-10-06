@@ -292,6 +292,14 @@ export class RoomBoardStore {
     this.version += 1;
   }
 
+  // The whole drawing of this turn, at once (joining or reconnecting mid-turn): no sounds.
+  restore(turnId: string, actions: BoardAction[]): void {
+    if (turnId !== this.#turnId) return;
+
+    this.release();
+    this.#remove(actions);
+  }
+
   // A new turn starts with a blank board.
   syncTurn(turnId: string): void {
     if (turnId === this.#turnId) return;

@@ -1,6 +1,8 @@
-import type { BoardFill, StrokeBatch } from './drawing.js';
+import type { BoardOp } from './drawing.js';
 import type { GamePhase, GameSettingKey, GameSettings, TrickKind, TurnEndReason, WordChoice, WordForms } from './game.js';
 import type { PlayerColor } from './players.js';
+import type { TableErrorCode } from './table-errors.js';
+import type { TableIntentType } from './table-messages.js';
 
 // What a table looks like to one person: shared state, plus the lines of the feed they may see.
 // The web app's stores read only these shapes, so the demo referee and the real server are
@@ -100,28 +102,51 @@ export interface TableSecret {
   word: WordForms | null;
 }
 
-// Client → server. Intents only: the server works out every result (spec D5).
-export interface TableIntents {
-  start: Record<string, never>;
-  updateSettings: Partial<GameSettings>;
-  chooseWord: { index: number };
-  chat: { text: string };
-  giveUp: Record<string, never>;
-  trick: { kind: TrickKind };
-  stroke: StrokeBatch;
-  fill: BoardFill;
-  undo: Record<string, never>;
-  clear: Record<string, never>;
-  react: { emoji: string };
-  rename: { name: string };
-  playAgain: Record<string, never>;
-}
-
-export type TableIntentType = keyof TableIntents;
-
 export interface TableReactionEvent {
   memberId: string;
   emoji: string;
 }
 
-export const chatMaxLength = 200;
+// Feed lines a table keeps (and a browser shows); the oldest go first.
+export const feedMaxItems = 200;
+
+// Server → client events of the live table. The web app's table client turns them back into
+// `TableSnapshot`s, so the stores read the same shapes as from the demo table.
+
+// The shared part of the table, the same for everyone. `now` is the server's clock, so browsers
+// can count down to `endsAt` (spec §9.4).
+export interface TableViewEvent {
+  now: number;
+  members: MemberSnapshot[];
+  game: GameSnapshot;
+}
+
+// Feed lines this person may see: new ones, or (`reset`) all of them, after joining or when
+// guessed chat opens up to them.
+export interface TableFeedEvent {
+  reset: boolean;
+  items: FeedItem[];
+}
+
+// The whole drawing of the turn (engine `encodeDrawing`), for a browser that joined or reloaded
+// mid-turn (spec §6.3).
+export interface TableDrawingEvent {
+  turnId: string;
+  bytes: Uint8Array;
+}
+
+// A refused intent, and which one it was.
+export interface TableErrorEvent {
+  code: TableErrorCode;
+  type: TableIntentType;
+}
+
+export interface TableEvents {
+  view: TableViewEvent;
+  feed: TableFeedEvent;
+  secret: TableSecret;
+  board: BoardOp;
+  drawing: TableDrawingEvent;
+  reaction: TableReactionEvent;
+  error: TableErrorEvent;
+}
