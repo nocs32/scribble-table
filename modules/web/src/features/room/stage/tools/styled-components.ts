@@ -1,4 +1,3 @@
-import { Popover } from '@ark-ui/react/popover';
 import { styled } from 'styled-system/jsx';
 
 export const RoomStageToolsRoot = styled('div', {
@@ -80,28 +79,4 @@ export const RoomStageToolsSwatch = styled('button', {
     },
   },
   defaultVariants: { selected: false },
-});
-
-export const RoomStageToolsConfirm = styled(Popover.Content, {
-  base: {
-    zIndex: '40',
-    display: 'grid',
-    gap: '12px',
-    width: '240px',
-    padding: '14px',
-    borderRadius: '12px',
-    bg: 'bg.surface',
-    color: 'fg.default',
-    boxShadow: 'dialog',
-    outline: 'none',
-    '&[data-state=open]': { animation: 'dialogIn 0.15s ease-out' },
-  },
-});
-
-export const RoomStageToolsConfirmTitle = styled('p', {
-  base: { fontSize: '15px', fontWeight: '900' },
-});
-
-export const RoomStageToolsConfirmButtons = styled('div', {
-  base: { display: 'flex', justifyContent: 'flex-end', gap: '8px' },
 });

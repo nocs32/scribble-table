@@ -11,13 +11,15 @@ export interface DemoTurnOptions {
   random: () => number;
 }
 
-// One drawing turn: the word, its letter hints over time, and who guessed it for how much.
+// One drawing turn: the word, its letter hints over time, who guessed it for how much, and who
+// gave up.
 export class DemoTurn {
   readonly word: DemoWord;
   readonly drawerId: string;
   readonly startedAt: number;
   readonly drawMs: number;
   readonly guesses: TurnGain[] = [];
+  readonly gaveUpIds: string[] = [];
   readonly #hints: boolean;
   readonly #order: Record<WordLanguage, number[]>;
 
@@ -51,6 +53,11 @@ export class DemoTurn {
     return this.guesses.some((guess) => guess.memberId === memberId);
   }
 
+  // The drawer, and whoever guessed it or gave up. They chat in guessed chat.
+  knowsWord(memberId: string): boolean {
+    return memberId === this.drawerId || this.hasGuessed(memberId) || this.gaveUpIds.includes(memberId);
+  }
+
   judge(text: string): GuessVerdict {
     return judgeGuess(text, this.answers);
   }
@@ -62,6 +69,10 @@ export class DemoTurn {
     this.guesses.push({ memberId, points });
 
     return points;
+  }
+
+  giveUp(memberId: string): void {
+    this.gaveUpIds.push(memberId);
   }
 
   #mask(language: WordLanguage, now: number): string {

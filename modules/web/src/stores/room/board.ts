@@ -1,6 +1,6 @@
 import { boardHeight, boardWidth, brushSizes, inkColors, type BoardOp, type BoardTool, type InkColor, type StrokeBatch } from '@scribble-table/protocol';
 import { makeAutoObservable, observableShallow } from 'mobx';
-import type { Schedule } from '../../services';
+import type { BoardSoundsService, Schedule } from '../../services';
 import type { Translate } from '../locale';
 import type { BoardAction, StrokeAction, TableSend } from './types';
 
@@ -32,6 +32,9 @@ export interface RoomBoardDeps {
   send: TableSend;
   // Only the drawer, while drawing.
   canDraw: () => boolean;
+  // The pencil, eraser and spray, for your strokes and the drawer's.
+  sounds: BoardSoundsService;
+  now: () => number;
   createId: () => string;
   schedule: Schedule;
 }
@@ -54,6 +57,21 @@ const half = (value: number): number => Math.round(value * 2) / 2;
 
 const clamp = (value: number, high: number): number => half(Math.min(high, Math.max(0, value)));
 
+// The length of a line through flat [x, y, x, y, …] points, starting from `from` when given.
+const pathLength = (points: readonly number[], from: readonly number[]): number => {
+  const all = [...from, ...points];
+  let length = 0;
+
+  for (let index = 2; index + 1 < all.length; index += 2) {
+    length += Math.hypot((all[index] ?? 0) - (all[index - 2] ?? 0), (all[index + 1] ?? 0) - (all[index - 1] ?? 0));
+  }
+
+  return length;
+};
+
+// The longest gap between two of your points that still counts as one movement, for the sound.
+const maxGapMs = 80;
+
 // The drawing: what's on the board (strokes and fills), your tool, colour and size, and your
 // strokes going out to the table. `revision` changes when something is taken away (undo, clear,
 // a new turn), so the canvas starts over; `version` changes with every new point.
@@ -70,6 +88,7 @@ export class RoomBoardStore {
   #live: StrokeAction | null = null;
   // Points of your current stroke already sent.
   #sent = 0;
+  #lastPointAt = 0;
   #cancelFlush: (() => void) | null = null;
 
   constructor(deps: RoomBoardDeps) {
@@ -141,12 +160,14 @@ export class RoomBoardStore {
       this.actions.push({ kind: 'fill', ...fill });
       this.version += 1;
       this.#deps.send('fill', fill);
+      this.#deps.sounds.spray();
 
       return;
     }
 
     this.#live = { kind: 'stroke', id: this.#deps.createId(), color: this.color, size: this.size, eraser: this.tool === 'eraser', points: [px, py] };
     this.#sent = 0;
+    this.#lastPointAt = this.#deps.now();
     this.actions.push(this.#live);
     this.state = 'stroking';
     this.version += 1;
@@ -160,12 +181,16 @@ export class RoomBoardStore {
 
     const [px, py] = [clamp(x, boardWidth), clamp(y, boardHeight)];
     const [lastX, lastY] = live.points.slice(-2);
+    const step = Math.hypot(px - (lastX ?? px), py - (lastY ?? py));
+    const now = this.#deps.now();
 
-    if (Math.hypot(px - (lastX ?? px), py - (lastY ?? py)) < minStep) return;
+    if (step < minStep) return;
 
     live.points.push(px, py);
     this.version += 1;
     this.#scheduleFlush();
+    this.#deps.sounds.scratch(live.eraser, step, Math.min(maxGapMs, now - this.#lastPointAt));
+    this.#lastPointAt = now;
   }
 
   release(): void {
@@ -230,9 +255,11 @@ export class RoomBoardStore {
 
   // What the drawer does, when it's someone else.
   receive(op: BoardOp): void {
-    if (op.type === 'stroke') this.#appendRemote(op.batch);
+    if (op.type === 'stroke') this.#deps.sounds.scratch(op.batch.eraser, this.#appendRemote(op.batch), flushMs);
     else if (op.type === 'fill') this.actions.push({ kind: 'fill', ...op.fill });
     else this.#remove(op.type === 'undo' ? this.actions.slice(0, -1) : []);
+
+    if (op.type === 'fill') this.#deps.sounds.spray();
 
     this.version += 1;
   }
@@ -246,16 +273,21 @@ export class RoomBoardStore {
     this.#remove([]);
   }
 
-  #appendRemote(batch: StrokeBatch): void {
+  // Adds the batch to its stroke and returns how far it drew.
+  #appendRemote(batch: StrokeBatch): number {
     const existing = this.actions.findLast((action) => action.kind === 'stroke' && action.id === batch.strokeId);
 
     if (existing?.kind === 'stroke') {
+      const length = pathLength(batch.points, existing.points.slice(-2));
+
       existing.points.push(...batch.points);
 
-      return;
+      return length;
     }
 
     this.actions.push({ kind: 'stroke', id: batch.strokeId, color: batch.color, size: batch.size, eraser: batch.eraser, points: [...batch.points] });
+
+    return pathLength(batch.points, []);
   }
 
   #remove(remaining: BoardAction[]): void {

@@ -54,6 +54,7 @@ export class DemoReferee implements DemoTableState {
 
     this.#bots = new DemoBots(deps, {
       chat: (id, text) => this.chat(id, text),
+      giveUp: (id) => this.giveUp(id),
       choose: (id, index) => this.chooseWord(id, index),
       draw: (op) => out.board(op),
       react: (id, emoji) => out.reaction({ memberId: id, emoji }),
@@ -64,6 +65,7 @@ export class DemoReferee implements DemoTableState {
       updateSettings: (id, patch) => this.updateSettings(id, patch),
       chooseWord: (id, { index }) => this.chooseWord(id, index),
       chat: (id, { text }) => this.chat(id, text),
+      giveUp: (id) => this.giveUp(id),
       rename: (id, { name }) => this.rename(id, name),
       playAgain: () => this.playAgain(),
       // Board intents and reactions matter only to other people, and here everyone else is a sample player.
@@ -102,6 +104,7 @@ export class DemoReferee implements DemoTableState {
     if (this.phase !== 'lobby' && this.phase !== 'podium' && this.members.length < gameLimits.minPlayers) this.#toLobby();
     else if (memberId === this.drawerId && this.phase === 'drawing') this.#endTurn('drawerLeft');
     else if (memberId === this.drawerId && this.phase === 'choosing') this.#nextTurn();
+    else if (this.#turn) this.#endIfNobodyGuessing(this.#turn);
 
     this.#emit();
   }
@@ -150,6 +153,19 @@ export class DemoReferee implements DemoTableState {
     if (this.phase === 'drawing' && this.#turn) this.#chatWhileDrawing(author, clean, this.#turn);
     else this.#feed.message(author, clean, null);
 
+    this.#emit();
+  }
+
+  // A guesser stops guessing: no points, but they see the word and move to guessed chat.
+  giveUp(memberId: string): void {
+    const member = this.#member(memberId);
+    const turn = this.#turn;
+
+    if (this.phase !== 'drawing' || !turn || !member || turn.knowsWord(memberId)) return;
+
+    turn.giveUp(memberId);
+    this.#feed.system(member, { type: 'gaveUp' });
+    this.#endIfNobodyGuessing(turn);
     this.#emit();
   }
 
@@ -210,7 +226,7 @@ export class DemoReferee implements DemoTableState {
   }
 
   #chatWhileDrawing(author: DemoMember, text: string, turn: DemoTurn): void {
-    if (author.id === turn.drawerId || turn.hasGuessed(author.id)) {
+    if (turn.knowsWord(author.id)) {
       this.#feed.message(author, text, turn);
 
       return;
@@ -237,7 +253,13 @@ export class DemoReferee implements DemoTableState {
 
     if (cheerer) this.#bots.cheer(cheerer);
 
-    if (this.members.every((member) => member.id === turn.drawerId || turn.hasGuessed(member.id))) this.#endTurn('everyone');
+    this.#endIfNobodyGuessing(turn);
+  }
+
+  #endIfNobodyGuessing(turn: DemoTurn): void {
+    if (this.phase !== 'drawing' || !this.members.every((member) => turn.knowsWord(member.id))) return;
+
+    this.#endTurn(turn.gaveUpIds.length > 0 ? 'gaveUp' : 'everyone');
   }
 
   #nextTurn(): void {

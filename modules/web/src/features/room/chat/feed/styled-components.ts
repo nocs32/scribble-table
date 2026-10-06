@@ -31,16 +31,21 @@ export const RoomChatFeedGutter = styled('div', {
   base: { display: 'flex', justifyContent: 'center', paddingTop: '2px' },
 });
 
+export const RoomChatFeedBody = styled('div', {
+  base: { minWidth: '0' },
+});
+
+// The name stays on one line (long ones end in "…"), with the time after it.
 export const RoomChatFeedMeta = styled('div', {
-  base: { display: 'flex', alignItems: 'baseline', gap: '8px' },
+  base: { display: 'flex', alignItems: 'baseline', gap: '8px', minWidth: '0' },
 });
 
 export const RoomChatFeedAuthor = styled('span', {
-  base: { fontSize: '15px', fontWeight: '900' },
+  base: { minWidth: '0', fontSize: '15px', fontWeight: '900', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
 });
 
 export const RoomChatFeedTime = styled('time', {
-  base: { fontSize: '12px', color: 'fg.muted', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' },
+  base: { flexShrink: '0', fontSize: '12px', color: 'fg.muted', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' },
 });
 
 export const RoomChatFeedText = styled('p', {
@@ -73,6 +78,17 @@ export const RoomChatFeedSystemName = styled('span', {
   base: { fontWeight: '700', color: 'fg.default' },
 });
 
-export const RoomChatFeedTag = styled('span', {
-  base: { fontSize: '11px', fontWeight: '700', color: 'success.text', textTransform: 'lowercase' },
+// "Only those who know can see this", on its own line above a guessed-chat message.
+export const RoomChatFeedTag = styled('p', {
+  base: {
+    gridColumn: '2',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '5px',
+    marginBottom: '2px',
+    fontSize: '12px',
+    fontWeight: '700',
+    color: 'success.text',
+    '& svg': { flexShrink: '0', width: '13px', height: '13px' },
+  },
 });

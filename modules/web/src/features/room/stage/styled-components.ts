@@ -33,13 +33,40 @@ export const RoomStageArea = styled('div', {
 export const RoomStageDock = styled('div', {
   base: {
     display: 'flex',
+    alignItems: 'center',
     justifyContent: 'center',
+    gap: '8px',
     flexShrink: '0',
     minHeight: '58px',
     paddingInline: '8px',
     paddingBlock: '8px',
     borderTop: '1px solid',
     borderColor: 'border.subtle',
+  },
+});
+
+// Next to the reactions while you guess.
+export const RoomStageGiveUpButton = styled('button', {
+  base: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '6px',
+    flexShrink: '0',
+    height: '38px',
+    paddingInline: '12px',
+    borderRadius: '8px',
+    border: '1px solid',
+    borderColor: 'border.default',
+    color: 'fg.muted',
+    fontSize: '14px',
+    fontWeight: '700',
+    whiteSpace: 'nowrap',
+    cursor: 'pointer',
+    transition: 'background-color 0.12s ease, color 0.12s ease, border-color 0.12s ease',
+    _hover: { bg: 'bg.hover', color: 'fg.default' },
+    _focusVisible: { outline: '2px solid', outlineColor: 'accent.ring', outlineOffset: '1px' },
+    '&[data-state=open]': { bg: 'accent.tint', color: 'accent.text', borderColor: 'transparent' },
+    '& svg': { width: '16px', height: '16px' },
   },
 });
 

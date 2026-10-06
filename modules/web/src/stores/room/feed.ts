@@ -18,7 +18,7 @@ export interface FeedEntry {
   authorColor: PlayerColor;
   timeLabel: string;
   startsGroup: boolean;
-  // "only those who know" on guessed-chat lines.
+  // "Only those who know can see this" on guessed-chat lines.
   tag: string | null;
   // A line only you see ("close!") is about you, so it doesn't repeat your name.
   showsAuthor: boolean;

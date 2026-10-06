@@ -91,6 +91,7 @@ export class RoomGameStore {
   drawerId: string | null = null;
   masks: WordForms | null = null;
   guessedIds: string[] = [];
+  gaveUpIds: string[] = [];
   reveal: RevealSnapshot | null = null;
   choices: WordChoice[] | null = null;
   word: WordForms | null = null;
@@ -113,8 +114,13 @@ export class RoomGameStore {
     return this.guessedIds.includes(this.#deps.presence.meId);
   }
 
+  get hasGivenUp(): boolean {
+    return this.gaveUpIds.includes(this.#deps.presence.meId);
+  }
+
+  // Still guessing: neither drawing nor knowing the word yet. Only then can you give up.
   get canGuess(): boolean {
-    return this.state === 'drawing' && !this.isDrawer && !this.hasGuessed;
+    return this.state === 'drawing' && !this.isDrawer && !this.hasGuessed && !this.hasGivenUp;
   }
 
   // You draw now: the board takes your strokes.
@@ -151,7 +157,7 @@ export class RoomGameStore {
     const lines: Record<GamePhase, () => string> = {
       lobby: () => t('game.waiting'),
       choosing: () => (this.isDrawer ? t('game.youChoose') : t('game.choosing', { name: this.drawerName })),
-      drawing: () => (this.isDrawer ? t('game.drawThis') : this.hasGuessed ? t('game.youGotIt') : t('game.guessThis')),
+      drawing: () => this.#drawingHeadline(),
       reveal: () => t('game.wordWas'),
       podium: () => t('game.over'),
     };
@@ -250,6 +256,7 @@ export class RoomGameStore {
     this.drawerId = game.drawerId;
     this.masks = game.masks;
     this.guessedIds = game.guessedIds;
+    this.gaveUpIds = game.gaveUpIds;
     this.reveal = game.reveal;
     this.settings.receive(game.settings);
     this.clock.track(game.endsAt);
@@ -268,18 +275,36 @@ export class RoomGameStore {
     if (this.isChoosing) this.#deps.send('chooseWord', { index });
   }
 
+  // The button asks first, so this goes straight to the table.
+  giveUp(): void {
+    if (this.canGuess) this.#deps.send('giveUp', {});
+  }
+
   playAgain(): void {
     if (this.state === 'podium') this.#deps.send('playAgain', {});
   }
 
+  #drawingHeadline(): string {
+    const { t } = this.#deps;
+
+    if (this.isDrawer) return t('game.drawThis');
+
+    if (this.hasGuessed) return t('game.youGotIt');
+
+    return this.hasGivenUp ? t('game.youGaveUp') : t('game.guessThis');
+  }
+
   #reasonLabel(reveal: RevealSnapshot): string {
     const { t } = this.#deps;
+    const someoneGotIt = reveal.gains.some((gain) => gain.memberId !== this.drawerId && gain.points > 0);
 
     if (reveal.reason === 'everyone') return t('reveal.everyone');
 
     if (reveal.reason === 'drawerLeft') return t('reveal.drawerLeft');
 
-    return reveal.gains.some((gain) => gain.memberId !== this.drawerId && gain.points > 0) ? t('reveal.time') : t('reveal.nobody');
+    if (reveal.reason === 'gaveUp') return someoneGotIt ? t('reveal.restGaveUp') : t('reveal.allGaveUp');
+
+    return someoneGotIt ? t('reveal.time') : t('reveal.nobody');
   }
 
   #gainView(memberId: string, points: number): GainView[] {

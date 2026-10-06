@@ -5,6 +5,7 @@ import { useRootStore } from '../../../stores/use-root-store';
 import { RoomTopBarDemo } from './demo';
 import { RoomTopBarLink } from './link';
 import { RoomTopBarPeople } from './people';
+import { RoomTopBarSound } from './sound';
 import {
   RoomTopBarBrand,
   RoomTopBarEnd,
@@ -30,6 +31,7 @@ export const RoomTopBar = observer(function RoomTopBar(): ReactElement {
       <RoomTopBarLink />
       <RoomTopBarEnd>
         <RoomTopBarPeople />
+        <RoomTopBarSound />
         <RoomTopBarLanguage type="button" aria-label={locale.toggleLabel} title={locale.toggleLabel} onClick={locale.toggle}>
           {locale.code}
         </RoomTopBarLanguage>

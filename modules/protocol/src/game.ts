@@ -49,5 +49,6 @@ export const defaultGameSettings: GameSettings = {
   onlyCustomWords: false,
 };
 
-// Why a turn ended.
-export type TurnEndReason = 'time' | 'everyone' | 'drawerLeft';
+// Why a turn ended. `everyone`: all the guessers got it; `gaveUp`: nobody was left guessing,
+// because some of them gave up.
+export type TurnEndReason = 'time' | 'everyone' | 'gaveUp' | 'drawerLeft';

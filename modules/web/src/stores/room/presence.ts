@@ -17,18 +17,21 @@ export interface PlayerView {
   scoreTitle: string;
   place: number;
   placeLabel: string;
-  isDrawing: boolean;
-  hasGuessed: boolean;
-  // "Drawing now" or "Guessed the word", for the icon next to their name.
+  // What they do in this turn, for the icon next to their name.
+  turnStatus: PlayerTurnStatus;
+  // "Drawing now", "Guessed the word" or "Gave up".
   statusLabel: string;
   // "+85" while a turn's points are shown; null otherwise.
   gainLabel: string | null;
 }
 
+export type PlayerTurnStatus = 'drawing' | 'guessed' | 'gaveUp' | 'none';
+
 export interface RoomPresenceDeps {
   t: Translate;
   drawerId: () => string | null;
   guessedIds: () => readonly string[];
+  gaveUpIds: () => readonly string[];
   gains: () => readonly TurnGain[];
 }
 
@@ -100,13 +103,22 @@ export class RoomPresenceStore {
     this.members = this.members.map((member) => (member.id === id ? { ...member, name } : member));
   }
 
+  #turnStatus(memberId: string): PlayerTurnStatus {
+    const { drawerId, guessedIds, gaveUpIds } = this.#deps;
+
+    if (memberId === drawerId()) return 'drawing';
+
+    if (guessedIds().includes(memberId)) return 'guessed';
+
+    return gaveUpIds().includes(memberId) ? 'gaveUp' : 'none';
+  }
+
   #toView(member: MemberSnapshot): PlayerView {
-    const { t, drawerId, guessedIds, gains } = this.#deps;
+    const { t, gains } = this.#deps;
     const isMe = member.id === this.meId;
     const place = this.placeById.get(member.id) ?? this.members.length;
     const gain = gains().find((entry) => entry.memberId === member.id);
-    const isDrawing = member.id === drawerId();
-    const hasGuessed = guessedIds().includes(member.id);
+    const turnStatus = this.#turnStatus(member.id);
 
     return {
       id: member.id,
@@ -120,9 +132,8 @@ export class RoomPresenceStore {
       scoreTitle: t('players.points', { count: member.score }),
       place,
       placeLabel: t('players.place', { place }),
-      isDrawing,
-      hasGuessed,
-      statusLabel: isDrawing ? t('players.drawing') : hasGuessed ? t('players.guessed') : '',
+      turnStatus,
+      statusLabel: turnStatus === 'none' ? '' : t(`players.${turnStatus}`),
       gainLabel: gain && gain.points > 0 ? t('players.gain', { points: gain.points }) : null,
     };
   }

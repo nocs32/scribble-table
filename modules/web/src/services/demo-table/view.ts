@@ -24,15 +24,17 @@ export const snapshotFor = ({ state, turn, feed, now }: DemoView, viewerId: stri
     masks: state.phase === 'drawing' && turn ? turn.masks(now) : null,
     endsAt: state.endsAt,
     guessedIds: turn ? turn.guesses.map((guess) => guess.memberId) : [],
+    gaveUpIds: turn ? [...turn.gaveUpIds] : [],
     reveal: state.reveal,
   },
   feed: feed.visibleTo(viewerId),
 });
 
-// The words to choose from go to the drawer; the word itself to the drawer and to whoever got it.
+// The words to choose from go to the drawer; the word itself to the drawer and to whoever got
+// it or gave up.
 export const secretFor = ({ state, turn, choices }: DemoView, viewerId: string): TableSecret => {
   const isDrawer = state.drawerId === viewerId;
-  const knowsWord = state.phase === 'drawing' && turn !== null && (isDrawer || turn.hasGuessed(viewerId));
+  const knowsWord = state.phase === 'drawing' && turn !== null && turn.knowsWord(viewerId);
 
   return {
     choices: state.phase === 'choosing' && isDrawer ? choices.map(({ forms, difficulty }) => ({ forms, difficulty })) : null,

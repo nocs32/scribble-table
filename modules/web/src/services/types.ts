@@ -1,12 +1,29 @@
 import type { BoardOp, TableIntents, TableIntentType, TableReactionEvent, TableSecret, TableSnapshot } from '@scribble-table/protocol';
 import type { Language, TranslationKey, TranslationValues } from '../i18n';
 
+export interface SoundPreference {
+  // 0–100.
+  volume: number;
+  muted: boolean;
+}
+
 // This browser's own settings, kept in localStorage.
 export interface PreferencesService {
   loadLanguage: () => Language | null;
   saveLanguage: (language: Language) => void;
   loadName: () => string | null;
   saveName: (name: string) => void;
+  loadSound: () => SoundPreference | null;
+  saveSound: (sound: SoundPreference) => void;
+}
+
+// What the drawer does, as sound: a line (pencil or eraser) and a fill (spray).
+export interface BoardSoundsService {
+  // `distance` board units drawn over `ms` milliseconds.
+  scratch: (eraser: boolean, distance: number, ms: number) => void;
+  spray: () => void;
+  // 0 is silent, 1 is full volume.
+  setLevel: (level: number) => void;
 }
 
 export interface TranslatorService {
@@ -65,6 +82,7 @@ export interface Services {
   clipboard: ClipboardService;
   address: AddressService;
   tableClient: TableClientService;
+  sounds: BoardSoundsService;
   schedule: Schedule;
   repeat: Schedule;
   random: () => number;

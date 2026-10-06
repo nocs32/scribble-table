@@ -35,6 +35,7 @@ export const en = {
     points_other: '{{count}} points',
     drawing: 'Drawing now',
     guessed: 'Guessed the word',
+    gaveUp: 'Gave up',
     gain: '+{{points}}',
   },
   game: {
@@ -47,6 +48,7 @@ export const en = {
     drawThis: 'Draw this',
     guessThis: 'Guess the word',
     youGotIt: 'You got it!',
+    youGaveUp: 'You gave up',
     wordWas: 'The word was',
     hiddenWord: 'Hidden word, letters: {{lengths}}',
     timeLeft_one: '{{count}} second left',
@@ -88,10 +90,19 @@ export const en = {
   reveal: {
     time: 'Time’s up!',
     everyone: 'Everyone got it!',
+    allGaveUp: 'Everyone gave up',
+    restGaveUp: 'The rest gave up',
     drawerLeft: 'The drawer left',
     nobody: 'Nobody guessed it',
     alsoCounts: 'Also counted: {{word}}',
     drawer: 'drawing',
+  },
+  giveUp: {
+    button: 'Give up',
+    title: 'Give up on this word?',
+    note: 'You’ll see the word, but won’t score this turn.',
+    keep: 'Keep guessing',
+    confirm: 'Give up',
   },
   podium: {
     winner: '{{name}} wins!',
@@ -139,7 +150,7 @@ export const en = {
     placeholder: 'Message the table',
     guessPlaceholder: 'Type your guess…',
     guessedPlaceholder: 'Chat with those who know…',
-    guessedTag: 'only those who know',
+    guessedTag: 'Only those who know can see this',
     someone: 'Someone',
   },
   feed: {
@@ -150,6 +161,7 @@ export const en = {
     started_other: 'started a game of {{count}} rounds',
     drawing: 'is drawing now',
     guessed: 'guessed the word!',
+    gaveUp: 'gave up',
     drew: 'drew “{{word}}”',
     close: '“{{guess}}” is close!',
     setting: {
@@ -168,6 +180,15 @@ export const en = {
     label: 'Reactions',
     react: 'React with {{emoji}}',
     more: 'More emoji',
+  },
+  sound: {
+    buttonOn: 'Sound settings: on',
+    buttonOff: 'Sound settings: muted',
+    title: 'Sound',
+    drawing: 'Drawing sounds',
+    hint: 'Pencil, eraser and spray as the drawer works',
+    volume: 'Volume',
+    percent: '{{value}}%',
   },
   picker: {
     search: 'Search emoji',

@@ -1,4 +1,5 @@
 import { createAddress } from './address';
+import { BoardSounds } from './board-sounds';
 import { createDemoTable } from './demo-table';
 import { createPreferences } from './preferences';
 import { createTranslator } from './translator';
@@ -6,11 +7,13 @@ import type { Schedule, Services } from './types';
 
 export type {
   AddressService,
+  BoardSoundsService,
   ClipboardService,
   DemoControls,
   PreferencesService,
   Schedule,
   Services,
+  SoundPreference,
   TableClientService,
   TableLink,
   TableLinkListeners,
@@ -38,6 +41,7 @@ export const createServices = (): Services => ({
   address: createAddress(),
   // Until core-api runs live tables (spec M2), the table is played in the browser.
   tableClient: createDemoTable({ schedule, random: Math.random, now: Date.now, createId }),
+  sounds: new BoardSounds(window),
   schedule,
   repeat,
   random: Math.random,

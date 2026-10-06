@@ -1,3 +1,4 @@
+import { Popover } from '@ark-ui/react/popover';
 import { styled } from 'styled-system/jsx';
 
 export const AvatarRoot = styled('span', {
@@ -114,6 +115,39 @@ export const IconButton = styled('button', {
     '&[aria-pressed=true]': { bg: 'accent.tint', color: 'accent.text' },
     '& svg': { width: '18px', height: '18px' },
   },
+});
+
+export const ConfirmPopoverContent = styled(Popover.Content, {
+  base: {
+    zIndex: '40',
+    display: 'grid',
+    gap: '12px',
+    width: '260px',
+    maxWidth: 'calc(100vw - 24px)',
+    padding: '14px',
+    borderRadius: '12px',
+    bg: 'bg.surface',
+    color: 'fg.default',
+    boxShadow: 'dialog',
+    outline: 'none',
+    '&[data-state=open]': { animation: 'dialogIn 0.15s ease-out' },
+  },
+});
+
+export const ConfirmPopoverText = styled('div', {
+  base: { display: 'grid', gap: '4px' },
+});
+
+export const ConfirmPopoverTitle = styled('p', {
+  base: { fontSize: '15px', fontWeight: '900' },
+});
+
+export const ConfirmPopoverNote = styled('p', {
+  base: { fontSize: '13px', color: 'fg.muted' },
+});
+
+export const ConfirmPopoverButtons = styled('div', {
+  base: { display: 'flex', justifyContent: 'flex-end', gap: '8px' },
 });
 
 // Auto-sizing inline input: the ::after copy of the text sets the width, the input sits on top.

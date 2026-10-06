@@ -39,6 +39,8 @@ export interface GameSnapshot {
   endsAt: number | null;
   // Who guessed this turn, in order.
   guessedIds: string[];
+  // Who gave up this turn: they score nothing, but see the word.
+  gaveUpIds: string[];
   reveal: RevealSnapshot | null;
 }
 
@@ -50,12 +52,13 @@ export type FeedEvent =
   | { type: 'started'; rounds: number }
   | { type: 'drawing' }
   | { type: 'guessed' }
+  | { type: 'gaveUp' }
   | { type: 'drew'; word: WordForms }
   | { type: 'setting'; setting: GameSettingKey; value: number | boolean }
   // Only the guesser sees it.
   | { type: 'close'; guess: string };
 
-// `guessed`: a line only the drawer and the people who already guessed can see.
+// `guessed`: a line only those who know the word can see: the drawer, and whoever guessed it or gave up.
 export type FeedAudience = 'everyone' | 'guessed';
 
 interface FeedItemBase {
@@ -77,7 +80,7 @@ export interface TableSnapshot {
   feed: FeedItem[];
 }
 
-// Only for you: the words to choose from and, once you draw or have guessed, the word itself.
+// Only for you: the words to choose from and, once you draw, have guessed or gave up, the word itself.
 export interface TableSecret {
   choices: WordChoice[] | null;
   word: WordForms | null;
@@ -89,6 +92,7 @@ export interface TableIntents {
   updateSettings: Partial<GameSettings>;
   chooseWord: { index: number };
   chat: { text: string };
+  giveUp: Record<string, never>;
   stroke: StrokeBatch;
   fill: BoardFill;
   undo: Record<string, never>;

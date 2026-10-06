@@ -127,12 +127,14 @@ export const RoomPlayersItemRoot = styled('li', {
       true: { bg: 'bg.subtle' },
       false: {},
     },
-    guessed: {
-      true: { bg: 'success.tint' },
-      false: {},
+    turn: {
+      drawing: {},
+      guessed: { bg: 'success.tint' },
+      gaveUp: {},
+      none: {},
     },
   },
-  defaultVariants: { me: false, guessed: false },
+  defaultVariants: { me: false, turn: 'none' },
 });
 
 export const RoomPlayersItemPlace = styled('span', {
@@ -152,14 +154,16 @@ export const RoomPlayersItemNote = styled('span', {
 });
 
 export const RoomPlayersItemStatus = styled('span', {
-  base: { display: 'inline-flex', color: 'accent.text', '& svg': { width: '16px', height: '16px' } },
+  base: { display: 'inline-flex', '& svg': { width: '16px', height: '16px' } },
   variants: {
-    guessed: {
-      true: { color: 'success.text' },
-      false: {},
+    turn: {
+      drawing: { color: 'accent.text' },
+      guessed: { color: 'success.text' },
+      gaveUp: { color: 'fg.subtle' },
+      none: {},
     },
   },
-  defaultVariants: { guessed: false },
+  defaultVariants: { turn: 'none' },
 });
 
 export const RoomPlayersItemScore = styled('span', {

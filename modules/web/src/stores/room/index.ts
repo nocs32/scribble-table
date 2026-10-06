@@ -35,9 +35,17 @@ export class RoomStore {
 
     this.#services = services;
     this.#locale = locale;
-    this.presence = new RoomPresenceStore({ t, drawerId: () => this.game.drawerId, guessedIds: () => this.game.guessedIds, gains: () => this.game.reveal?.gains ?? [] });
+
+    this.presence = new RoomPresenceStore({
+      t,
+      drawerId: () => this.game.drawerId,
+      guessedIds: () => this.game.guessedIds,
+      gaveUpIds: () => this.game.gaveUpIds,
+      gains: () => this.game.reveal?.gains ?? [],
+    });
+
     this.game = new RoomGameStore({ t, language, presence: this.presence, send, now: services.now, repeat: services.repeat });
-    this.board = new RoomBoardStore({ t, send, canDraw: () => this.game.canDraw, createId: services.createId, schedule: services.schedule });
+    this.board = new RoomBoardStore({ t, send, canDraw: () => this.game.canDraw, sounds: services.sounds, now: services.now, createId: services.createId, schedule: services.schedule });
     this.feed = new RoomFeedStore({ presence: this.presence, locale, language, send: (text) => send('chat', { text }) });
     this.reactions = new RoomReactionsStore({ ...services, t, send: (emoji) => send('react', { emoji }) });
     this.share = new RoomShareStore({ ...services, roomId: () => this.link?.roomId ?? null, t });

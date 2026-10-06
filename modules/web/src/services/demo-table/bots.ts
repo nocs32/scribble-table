@@ -6,6 +6,7 @@ import type { DemoDeps, DemoMember, DemoSketchStep, DemoWord } from './types';
 // What sample players can do at the table: the same things people do.
 export interface DemoBotsHost {
   chat: (memberId: string, text: string) => void;
+  giveUp: (memberId: string) => void;
   choose: (memberId: string, index: number) => void;
   draw: (op: BoardOp) => void;
   react: (memberId: string, emoji: string) => void;
@@ -21,7 +22,7 @@ const batchMs = 50;
 const strokePauseMs = 300;
 
 // Sample players: they greet, pick words, draw their sketch stroke by stroke, and guess
-// (some wrong, some one letter off, most right) at random moments.
+// (some wrong, some one letter off, most right) at random moments. Some never get it and give up.
 export class DemoBots {
   #stops: Array<() => void> = [];
   readonly #deps: DemoDeps;
@@ -61,12 +62,14 @@ export class DemoBots {
       this.#at(turn, 0.3 + this.#deps.random() * 0.3, () => this.#host.chat(bot.id, this.#typo(answer)));
     }
 
-    if (this.#deps.random() < 0.85) {
+    if (this.#deps.random() < 0.8) {
       const at = 0.2 + this.#deps.random() * 0.7;
 
       this.#at(turn, at, () => this.#host.chat(bot.id, answer));
 
       if (this.#deps.random() < 0.4) this.#at(turn, at + 0.04, () => this.#host.chat(bot.id, this.#pick(praise[bot.language])));
+    } else if (this.#deps.random() < 0.6) {
+      this.#at(turn, 0.62 + this.#deps.random() * 0.25, () => this.#host.giveUp(bot.id));
     }
   }
 

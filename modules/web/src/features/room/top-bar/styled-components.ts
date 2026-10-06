@@ -124,6 +124,11 @@ export const RoomTopBarLinkHint = styled('span', {
   },
 });
 
+// Phones show just the icon, so the link itself has room.
+export const RoomTopBarLinkHintLabel = styled('span', {
+  base: { display: 'none', sm: { display: 'inline' } },
+});
+
 // The demo table's buttons, next to the brand. Desktop only: it's a tool for trying the game alone.
 export const RoomTopBarDemoRoot = styled('div', {
   base: {

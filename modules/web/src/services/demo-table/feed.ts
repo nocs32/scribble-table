@@ -6,7 +6,7 @@ interface DemoFeedEntry {
   item: FeedItem;
   // A line only one person sees ("close!").
   onlyFor: string | null;
-  // Guessed chat: only the drawer and the people who guessed in this turn see it.
+  // Guessed chat: only those who know this turn's word see it.
   turn: DemoTurn | null;
 }
 
@@ -37,7 +37,7 @@ export class DemoFeed {
   #canSee(entry: DemoFeedEntry, viewerId: string): boolean {
     if (entry.onlyFor !== null) return entry.onlyFor === viewerId;
 
-    return entry.turn === null || entry.turn.drawerId === viewerId || entry.turn.hasGuessed(viewerId);
+    return entry.turn === null || entry.turn.knowsWord(viewerId);
   }
 
   #base(author: DemoMember): Pick<FeedItem, 'id' | 'authorId' | 'authorName' | 'authorColor' | 'at'> {

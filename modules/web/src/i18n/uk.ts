@@ -37,6 +37,7 @@ export const uk = {
     points_other: '{{count}} очка',
     drawing: 'Зараз малює',
     guessed: 'Слово вгадано',
+    gaveUp: 'Більше не вгадує',
     gain: '+{{points}}',
   },
   game: {
@@ -49,6 +50,7 @@ export const uk = {
     drawThis: 'Намалюйте',
     guessThis: 'Вгадайте слово',
     youGotIt: 'Вгадано!',
+    youGaveUp: 'Ви здалися',
     wordWas: 'Слово було',
     hiddenWord: 'Приховане слово, літер: {{lengths}}',
     timeLeft_one: 'Лишилася {{count}} секунда',
@@ -100,10 +102,19 @@ export const uk = {
   reveal: {
     time: 'Час вийшов!',
     everyone: 'Усі вгадали!',
+    allGaveUp: 'Усі здалися',
+    restGaveUp: 'Решта здалася',
     drawerLeft: 'Той, хто малював, вийшов',
     nobody: 'Ніхто не вгадав',
     alsoCounts: 'Також зараховується: {{word}}',
     drawer: 'малює',
+  },
+  giveUp: {
+    button: 'Здатися',
+    title: 'Здаєтеся?',
+    note: 'Ви побачите слово, але не отримаєте очок за цей хід.',
+    keep: 'Вгадувати далі',
+    confirm: 'Здаюся',
   },
   podium: {
     winner: 'Перемагає {{name}}!',
@@ -151,7 +162,7 @@ export const uk = {
     placeholder: 'Повідомлення для всіх',
     guessPlaceholder: 'Ваша здогадка…',
     guessedPlaceholder: 'Чат для тих, хто знає…',
-    guessedTag: 'лише для тих, хто знає',
+    guessedTag: 'Бачать лише ті, хто знає слово',
     someone: 'Хтось',
   },
   feed: {
@@ -164,6 +175,7 @@ export const uk = {
     started_other: 'починає гру на {{count}} раунду',
     drawing: 'зараз малює',
     guessed: 'вгадує слово!',
+    gaveUp: 'здається',
     drew: 'малює «{{word}}»',
     close: '«{{guess}}» — майже!',
     setting: {
@@ -184,6 +196,15 @@ export const uk = {
     label: 'Реакції',
     react: 'Реакція {{emoji}}',
     more: 'Більше емодзі',
+  },
+  sound: {
+    buttonOn: 'Налаштування звуку: увімкнено',
+    buttonOff: 'Налаштування звуку: вимкнено',
+    title: 'Звук',
+    drawing: 'Звуки малювання',
+    hint: 'Олівець, гумка й балончик, коли хтось малює',
+    volume: 'Гучність',
+    percent: '{{value}}%',
   },
   picker: {
     search: 'Пошук емодзі',
