@@ -19,7 +19,7 @@ The user plays this game, so knowing the words would spoil it.
 - **Browsers never get the full lists.** Only the drawer's browser gets the turn's word.
 
 ## Layout
-- `modules/web`: frontend. Vite + React 19 + TypeScript, Panda CSS, MobX, i18next (English and Ukrainian). Ark UI is added as features need it.
+- `modules/web`: frontend. Vite + React 19 + TypeScript, Panda CSS, MobX, Ark UI, i18next (English and Ukrainian).
 - `modules/core-api`: backend. Node + Express 5 + Colyseus 0.18 (live tables), one process on :2568.
 - `modules/protocol`: the shared contract. Message schemas, error codes, and later the Colyseus state classes.
 - `modules/engine`: pure game logic (guess matching, scoring, hints, stroke encoding), shared by both apps.
@@ -53,4 +53,5 @@ pnpm --filter @scribble-table/core-api test   # also: @scribble-table/engine
 - **TypeScript is pinned to 6.0.** typescript-eslint doesn't support TypeScript 7 yet. Don't upgrade it.
 - **pnpm workspaces:** the packages are listed in `pnpm-workspace.yaml`. Add a dependency with `pnpm --filter @scribble-table/<module> add <pkg>`.
 - **pnpm's release-age guard:** pnpm refuses versions published in the last day. Pick the previous version instead of adding exceptions.
-- **Dev handle:** in development the root store is `window.scribbleTable`, for checking state from the console or a test script.
+- **The demo table (until the backend phase):** the web app plays against a referee in the browser, `services/demo-table`, with sample players who chat, draw and guess. A reload starts a new table. Its 12 sample words show in the UI, so the real word lists must never contain them.
+- **Dev handle:** in development the root store is `window.scribbleTable`, for checking state from the console or a test script, e.g. `scribbleTable.room.game.state` or `scribbleTable.room.demo.skip()`.

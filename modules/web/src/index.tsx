@@ -7,6 +7,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './app';
 import { syncDocumentLanguage } from './services/document-language';
+import { startKeyboardShortcuts } from './services/keyboard-shortcuts';
 import { createRootStore } from './stores';
 
 const rootElement = document.getElementById('root');
@@ -23,7 +24,8 @@ if (import.meta.env.DEV) {
 }
 
 syncDocumentLanguage(store.locale);
-store.server.check();
+startKeyboardShortcuts(store);
+store.room.open();
 
 createRoot(rootElement).render(
   <StrictMode>

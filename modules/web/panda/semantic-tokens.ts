@@ -43,6 +43,18 @@ export const semanticTokens = defineSemanticTokens({
       ring: { value: '{colors.coral.9}' },
     },
     danger: { value: '{colors.status.red}' },
+    success: {
+      default: { value: '{colors.status.green}' },
+      tint: { value: 'rgba(48, 164, 108, 0.16)' },
+      text: { value: '#5BD69B' },
+    },
+    // The drawing board is white paper on the dark app.
+    board: {
+      paper: { value: '{colors.ink.white}' },
+      edge: { value: 'rgba(0, 0, 0, 0.35)' },
+      // Behind a card that sits on the board (word choice, reveal, podium).
+      veil: { value: 'rgba(17, 17, 16, 0.62)' },
+    },
     presence: { online: { value: '{colors.status.green}' } },
   },
   shadows: {

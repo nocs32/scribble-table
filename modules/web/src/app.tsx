@@ -1,5 +1,5 @@
 import type { ReactElement } from 'react';
-import { Home } from './features';
+import { Room } from './features';
 import type { RootStore } from './stores';
 import { StoreContext } from './stores/store-context';
 
@@ -10,7 +10,7 @@ interface AppProps {
 export function App({ store }: AppProps): ReactElement {
   return (
     <StoreContext value={store}>
-      <Home />
+      <Room />
     </StoreContext>
   );
 }
